@@ -5432,7 +5432,7 @@ UpdateMetaObjectEnd:
     ; a dropped item.
     ;
     LDA ObjType, X
-    STA _Multi_0412, X
+    STA _Multi_0412, X          ; TODO: DASM.EXPR: Item_ObjMonsterType
     ; Certain objects don't advance the world kill cycle.
     ;
     CMP #$5D

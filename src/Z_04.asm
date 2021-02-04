@@ -1,4 +1,5 @@
 .INCLUDE "Variables.inc"
+.INCLUDE "ObjVars.inc"
 
 .SEGMENT "BANK_04_00"
 
@@ -196,10 +197,7 @@ InitMonsterShot:
     LDA #$C0                    ; QSpeed $C0 (3 pixels a frame)
     BNE :+
 _InitMonsterShot_Unknown54:
-; QSpeed $E0 (3.5 pixels a frame)
-; Unknown block
-    .BYTE $A9, $E0
-
+    LDA #$E0                    ; QSpeed $E0 (3.5 pixels a frame)
 :
     STA _ObjQSpeedFrac, X
     JMP ResetObjMetastate
@@ -280,7 +278,7 @@ UpdateStandingFire:
 ; Set the turn rate. If being shoved, then shove and return.
 ;
 UpdateCommonWanderer:
-    STA _Multi_041F, X
+    STA ObjTurnRate, X
     LDA ObjShoveDir, X
     BEQ :+
     JMP Obj_Shove
@@ -301,9 +299,9 @@ UpdateCommonWanderer:
 Wanderer_TargetPlayer:
     ; If turn timer <> 0, then decrement it.
     ;
-    LDA $0478, X
+    LDA ObjTurnTimer, X
     BEQ :+
-    DEC $0478, X
+    DEC ObjTurnTimer, X
 :
     JSR Walker_Move
     LDA ObjShoveDir, X
@@ -326,7 +324,7 @@ Exit:
     ; If turn rate < a random value, or Link's state = $FF;
     ; then go turn if turn timer has expired.
     ;
-    LDA _Multi_041F, X
+    LDA ObjTurnRate, X
     CMP Random+1, X
     BCC @TurnIfTime
     LDA ObjState
@@ -389,11 +387,11 @@ Exit:
     ; Set turn timer to a random value.
     ;
     LDA Random, X
-    STA $0478, X
+    STA ObjTurnTimer, X
     ; Set "wants to shoot" flag to 1.
     ;
     LDA #$01
-    STA _Multi_0412, X
+    STA ObjWantsToShoot, X
     ; Go set input direction to facing direction.
     ;
     JMP L_Walker_SetInputDirAndTryShootingBoomerang
@@ -402,10 +400,10 @@ Exit:
     ; Reset "wants to shoot" flag.
     ;
     LDA #$00
-    STA _Multi_0412, X
+    STA ObjWantsToShoot, X
     ; If turn timer <> 0, then go set input direction to facing direction.
     ;
-    LDA $0478, X
+    LDA ObjTurnTimer, X
     BNE @SetInputDir
     ; Turn toward the chase target in a direction perpendicular to
     ; facing direction.
@@ -509,12 +507,10 @@ UpdateGoriya:
     BCS :+
     INY
 :
-    ; TODO:
     ; Reset the "wants to shoot" flag.
     ;
     LDA #$00
-    STA _Multi_0412, X
-    ; TODO:
+    STA ObjWantsToShoot, X
     ; If the distance chosen < $51, then
     ; set the "wants to shoot" flag to 1,
     ; and face in the chosen direction.
@@ -522,7 +518,7 @@ UpdateGoriya:
     LDA $0000, Y
     CMP #$51
     BCS L_Walker_SetInputDirAndTryShootingBoomerang
-    INC _Multi_0412, X
+    INC ObjWantsToShoot, X
     LDA $0002, Y
     STA ObjDir, X
 L_Walker_SetInputDirAndTryShootingBoomerang:
@@ -578,15 +574,15 @@ L_Walker_SetInputDirAndTryShootingBoomerang:
     ; Reset the "wants to shoot" flag.
     ;
     LDA #$00
-    STA _Multi_0412, X
+    STA ObjWantsToShoot, X
     ; Have the shot keep track of the monster.
     ;
     TXA
-    STA _Multi_042C, Y
+    STA ObjRefId, Y
     ; Have the monster keep track of the shot.
     ;
     TYA
-    STA _Multi_042C, X
+    STA ObjRefId, X
     ; Set the shot's state to $10, which is the flying state for them.
     ;
     LDA #$10
@@ -691,10 +687,10 @@ UpdateBlock0Idle:
     ;
     ; Increase the push timer.
     ;
-    INC _Multi_0412, X
+    INC ObjPushTimer, X
     ; If the push timer still < $10, return.
     ;
-    LDY _Multi_0412, X
+    LDY ObjPushTimer, X
     CPY #$10
     BCC L10262_Exit
     ; Link has pushed enough.
@@ -716,7 +712,7 @@ ResetPushTimer:
     ; Reset the push timer.
     ;
     LDA #$00
-    STA _Multi_0412, X
+    STA ObjPushTimer, X
 L10262_Exit:
     RTS
 
@@ -920,9 +916,7 @@ DestroyCountedMonsterShot:
 BounceShot:
     ; Get the reverse direction index for the bounce direction.
     ;
-    ; TODO: Name: ObjMovingLimit
-    ;
-    LDA _ObjMovingLimit, X
+    LDA Shot_ObjBounceDir, X
     JSR GetOppositeDir
     ; Modify the coordinates according to the displacements for
     ; the bounce direction.
@@ -938,12 +932,10 @@ BounceShot:
     ; Add 2 to the bounce distance.
     ; The absolute value of one of the displacements is 2.
     ;
-    ; TODO: Name: ObjGridOffset
-    ;
-    LDA ObjGridOffset, X
+    LDA Shot_ObjBounceDist, X
     CLC
     ADC #$02
-    STA ObjGridOffset, X
+    STA Shot_ObjBounceDist, X
     ; Go destroy the shot, if the bounce counter has reached the limit.
     ; Otherwise, go draw.
     ;
@@ -960,12 +952,11 @@ BounceShot:
 ; [0C]: 1 if objects collide
 ; [034B]: ShotCollidesWithLink
 ;
-; TODO: Name: ObjGridOffset
 ; Reset bounce distance.
 ;
 CheckShotLinkCollision:
     LDA #$00
-    STA ObjGridOffset, X
+    STA Shot_ObjBounceDist, X
     JSR CheckLinkCollision
     LDA ShotCollidesWithLink
     BEQ :+
@@ -973,10 +964,8 @@ CheckShotLinkCollision:
     ; Set the bounce direction to Link's facing direction.
     ; Set state $30 to bounce.
     ;
-    ; TODO: Name: ObjMovingLimit
-    ;
     LDA ObjDir
-    STA _ObjMovingLimit, X
+    STA Shot_ObjBounceDir, X
     LDA #$30
     STA ObjState, X
 :
@@ -996,17 +985,17 @@ UpdateFireball:
     ;
     ; Reset horizontal and vertical position fractions.
     ;
-    STA _ObjShootTimer, X
-    STA $045E, X
+    STA Fireball_ObjPosFracX, X
+    STA Fireball_ObjPosFracY, X
     ; Link is the target. So, register A has 0 -- his object slot.
     ;
     JSR GetDirectionsAndDistancesToTarget
     ; Remember the horizontal and vertical directions toward target.
     ;
     LDA $0B
-    STA _Multi_0412, X
+    STA Fireball_ObjDirToTargetX, X
     LDA $0A
-    STA _Multi_0437, X
+    STA Fireball_ObjDirToTargetY, X
     ; Set the facing direction to the combination of the two.
     ;
     ORA $0B
@@ -1016,9 +1005,9 @@ UpdateFireball:
     ; Look up and set the horizontal and vertical q-speeds.
     ;
     LDA FireballQSpeedsX, Y
-    STA _Multi_041F, X
+    STA Fireball_ObjQSpeedX, X
     LDA FireballQSpeedsY, Y
-    STA _Multi_0444, X
+    STA Fireball_ObjQSpeedY, X
     ; Set state to $10: monster shot active.
     ; Set object timer to $10, so it's seen but delays a little before moving.
     ;
@@ -1049,26 +1038,26 @@ UpdateFireball:
     ;
     ; First, load the horizontal direction into [0F].
     ;
-    LDA _Multi_0412, X
+    LDA Fireball_ObjDirToTargetX, X
     STA $0F
     ; Load the horizontal q-speed and position fraction,
     ; move, then save the position fraction.
     ;
-    LDA _Multi_041F, X
-    LDY _ObjShootTimer, X
+    LDA Fireball_ObjQSpeedX, X
+    LDY Fireball_ObjPosFracX, X
     JSR Fireball_MoveOneAxis
-    STA _ObjShootTimer, X
+    STA Fireball_ObjPosFracX, X
     ; Second, load the vertical direction into [0F].
     ;
-    LDA _Multi_0437, X
+    LDA Fireball_ObjDirToTargetY, X
     STA $0F
     ; Load the vertical q-speed and position fraction,
     ; move, then save the position fraction.
     ;
-    LDA _Multi_0444, X
-    LDY $045E, X
+    LDA Fireball_ObjQSpeedY, X
+    LDY Fireball_ObjPosFracY, X
     JSR Fireball_MoveOneAxis
-    STA $045E, X
+    STA Fireball_ObjPosFracY, X
 @CheckCollisionAndDraw:
     ; Check for collision with Link. If hit, then go destroy the fireball.
     ;
@@ -1114,7 +1103,7 @@ InitBlueKeese:
     LDA #$C0
     STA FlyingMaxSpeedFrac
     LDA #$1F
-    STA _Multi_041F, X
+    STA Flyer_ObjSpeed, X
     RTS
 
 InitRedOrBlackKeese:
@@ -1122,7 +1111,7 @@ InitRedOrBlackKeese:
     ; Red and black keeses are like blue ones, but faster.
     ;
     LDA #$7F
-    STA _Multi_041F, X
+    STA Flyer_ObjSpeed, X
     RTS
 
 UpdateBubble:
@@ -1201,7 +1190,7 @@ UpdateKeese:
     ; Like peahats, keeses animate as fast as they move.
     ; But keese beat their wings at half the rate.
     ;
-    LDA _Multi_0437, X
+    LDA Flyer_ObjDistTraveled, X
     AND #$02
     LSR
     JSR DrawObjectMirrored
@@ -1209,7 +1198,7 @@ UpdateKeese:
     JMP ResetShoveInfo
 
 ControlKeeseFlight:
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     JSR TableJump
 ControlKeeseFlight_JumpTable:
     .ADDR Flyer_SpeedUp
@@ -1237,9 +1226,9 @@ Flyer_KeeseDecideState:
     INY                         ; Else go to state 4.
 Flyer_SetStateAndTurns:
     TYA
-    STA _Multi_0444, X
+    STA Flyer_ObjFlyingState, X
     LDA #$06                    ; Set 6 turns for the next state.
-    STA _Multi_042C, X
+    STA Flyer_ObjTurns, X
     RTS
 
 UpdateZol:
@@ -1476,7 +1465,7 @@ Gel_Move:
 @State2:
     ; State 2.
     ;
-    ; Set QSpeed $40 (1 pixel a second).
+    ; Set QSpeed $40 (1 pixel a frame).
     ;
     LDA #$40
 ; Params:
@@ -1490,7 +1479,7 @@ UpdateNormalZolOrGel:
     CMP #$05
     BCS @Exit
     LDA #$20                    ; Turn rate $20
-    STA _Multi_041F, X
+    STA ObjTurnRate, X
     JSR Wanderer_TargetPlayer
     ; If the monster is between squares, or timer <> 0; then return.
     ;
@@ -1667,10 +1656,10 @@ UpdateStatues:
     ;
     ; Decrement the fireball timer at this index.
     ;
-    LDY $04E8, X
+    LDY Statue_ObjFireballTimer, X
     DEY
     TYA
-    STA $04E8, X
+    STA Statue_ObjFireballTimer, X
     ; If it was not 0, then this fireball index has to keep waiting
     ; to make a fireball. Go loop again.
     ;
@@ -1688,7 +1677,7 @@ UpdateStatues:
     AND #$03
     TAY
     LDA StatueFireballStartTimes, Y
-    STA $04E8, X
+    STA Statue_ObjFireballTimer, X
     ; The coordinate lists are divided into sets for each pattern.
     ;
     ; Look up the index of the base of the set for the pattern in use.
@@ -1913,7 +1902,7 @@ EndInitFlyer:
     LDA #$A0
     STA FlyingMaxSpeedFrac
     LDA #$1F
-    STA _Multi_041F, X
+    STA Flyer_ObjSpeed, X
     RTS
 
 InitPondFairy:
@@ -1970,7 +1959,7 @@ UpdateMoblin:
     ; Set turn rate to $A0.
     ;
     LDA #$A0
-    STA _Multi_041F, X
+    STA ObjTurnRate, X
     JSR Wanderer_TargetPlayer
     LDY #$5B                    ; Arrow object type
     JMP :+
@@ -2044,7 +2033,7 @@ _TryShooting:
     ; Else go set a non-zero speed and return.
     ;
     BPL @SetShootTimer
-    LDA _Multi_0412, X
+    LDA ObjWantsToShoot, X
     BEQ @SetSpeed
     LDY #$30
 @SetShootTimer:
@@ -2076,7 +2065,7 @@ _TryShooting:
     ; It succeeded, so reset "wants to shoot" flag and the speed.
     ;
     LDA #$00
-    STA _Multi_0412, X
+    STA ObjWantsToShoot, X
 @ZeroSpeed:
     PLA                         ; Replace the speed that was pushed with 0.
     LDA #$00
@@ -2145,7 +2134,7 @@ UpdateMonsterArrow:
     ; If the shooter is gone, then reset the arrow's object timer;
     ; so that it flies right away.
     ;
-    LDY _Multi_042C, X
+    LDY ObjRefId, X
 ; Unknown block
     .BYTE $B9, $4F, $03, $D0, $02, $95, $28, $4C
     .BYTE $7B, $F5
@@ -2330,14 +2319,14 @@ UpdateTektiteOrBoulder:
     ;
     ; As you can see, an endless loop has been made.
     ;
-    LDA _ObjShootTimer, X
+    LDA Jumper_ObjReversalCount, X
     CMP #$02
     BCC @FinishSetUpJump
     LDA ObjDir, X
     EOR #$03
     STA ObjDir, X
     LDA #$00
-    STA _ObjShootTimer, X
+    STA Jumper_ObjReversalCount, X
 @FinishSetUpJump:
     ; If the object is a boulder, then make sure its facing direction
     ; has a down vertical component.
@@ -2352,12 +2341,12 @@ UpdateTektiteOrBoulder:
     LDA ObjY, X
     CLC
     ADC JumperYOffsets, Y
-    STA _Multi_0444, X
+    STA Jumper_ObjTargetY, X
     ; Set the starting speed, depending on the object type.
     ;
     JSR Jumper_GetKind
     LDA JumperStartSpeedsHi, Y
-    STA _Multi_0412, X
+    STA Jumper_ObjSpeedWholeY, X
     ; Reset the vertical speed low byte.
     ; Then go animate, draw, and check collisions.
     ;
@@ -2376,7 +2365,7 @@ UpdateTektiteOrBoulder:
     ;
     LDA $0F
     BNE :+
-    INC _ObjShootTimer, X
+    INC Jumper_ObjReversalCount, X
     JMP @SetUpJump
 
 :
@@ -2384,7 +2373,7 @@ UpdateTektiteOrBoulder:
     ; This step in the jump succeeded. So, reset the reversal count.
     ;
     LDA #$00
-    STA _ObjShootTimer, X
+    STA Jumper_ObjReversalCount, X
     ; Get the base offset for the kind of jumper the object is.
     ;
     JSR Jumper_GetKind
@@ -2422,7 +2411,7 @@ UpdateTektiteOrBoulder:
     ; If going up (negative v-speed high byte), then
     ; go animate, draw, and check collisions.
     ;
-    LDA _Multi_0412, X
+    LDA Jumper_ObjSpeedWholeY, X
     BMI Jumper_AnimateAndCheckCollisions
     ; Going down. We have to consider the target Y.
     ;
@@ -2431,7 +2420,7 @@ UpdateTektiteOrBoulder:
     ;
     LDA ObjY, X
     SEC
-    SBC _Multi_0444, X          ; Target Y
+    SBC Jumper_ObjTargetY, X
     JSR Abs
     CMP #$03
     BCS Jumper_AnimateAndCheckCollisions
@@ -2499,7 +2488,6 @@ Jumper_AnimateAndCheckCollisions:
     BCC @DrawTektite
     ; Else cycle the animation counter, draw, and check collisions.
     ;
-    ; TODO: name: movement frame
     ; The movement frame determines the frame image.
     ;
     LDA #$10
@@ -2563,20 +2551,20 @@ Jumper_MoveY:
     STY $02                     ; [02] holds the max speed high byte
     ; Add the high speed byte to the Y coordinate.
     ;
-    LDA _Multi_0412, X
+    LDA Jumper_ObjSpeedWholeY, X
     ADC ObjY, X
     STA ObjY, X
     ; Add the acceleration to the speed fraction (low byte).
     ;
-    LDA _Multi_041F, X
+    LDA Jumper_ObjSpeedFracY, X
     CLC
     ADC $00                     ; [00] acceleration
-    STA _Multi_041F, X
+    STA Jumper_ObjSpeedFracY, X
     ; Carry over to the high speed byte.
     ;
-    LDA _Multi_0412, X
+    LDA Jumper_ObjSpeedWholeY, X
     ADC #$00
-    STA _Multi_0412, X
+    STA Jumper_ObjSpeedWholeY, X
     ; *Signed comparison*:
     ; If the high speed byte < high max speed byte, then return.
     ;
@@ -2588,14 +2576,14 @@ Jumper_MoveY:
     BMI L10A52_Exit
     ; Limit the speed to the max speed.
     ;
-    LDA _Multi_041F, X
+    LDA Jumper_ObjSpeedFracY, X
     CMP #$80
     BCC L10A52_Exit
     LDA $02
-    STA _Multi_0412, X
+    STA Jumper_ObjSpeedWholeY, X
 Jumper_ResetVSpeedFrac:
     LDA #$00
-    STA _Multi_041F, X
+    STA Jumper_ObjSpeedFracY, X
 L10A52_Exit:
     RTS
 
@@ -2610,7 +2598,7 @@ BlueLeeverStateAnimTimes:
 
 UpdateBlueLeever:
     LDA #$A0                    ; Turn rate $A0
-    STA _Multi_041F, X
+    STA ObjTurnRate, X
     JSR Wanderer_TargetPlayer
 UpdateBurrower:
     ; If object timer <> 0, then go animate, draw, and check for collisions.
@@ -2693,7 +2681,6 @@ Burrower_AnimateDrawAndCheckCollisions:
     ; Or else if is zora in state 1 or 5, then use one of
     ; the mound frame images:
     ;
-    ; TODO: name: movement frame
     ; frame image := ((state - 1) * 2) + movement frame
     ;
     ; This yields 0/1 or 8/9, depending on the state.
@@ -2986,7 +2973,7 @@ UpdateOctorock:
     BCS :+
     LDA #$70
 :
-    STA _Multi_041F, X
+    STA ObjTurnRate, X
     JSR Wanderer_TargetPlayer
     ; If the octorock is slow, then use q-speed $20.
     ; Else double it.
@@ -3038,8 +3025,6 @@ UpdateOctorock:
     ; There are actually 6 frame images divided into 2 sets.
     ; Each set depicts one animation frame. In each set there are
     ; 3 frame images: 1 for each direction (left, up, down).
-    ;
-    ; TODO: name: movement frame
     ;
     ; The movement frame will keep track of the base offset of
     ; the current set for the current animation frame: 0 or 3.
@@ -3509,7 +3494,7 @@ PondFairy_MoveHearts:
     SEC
     SBC #$03
     TAY
-    LDA ObjGridOffset+2
+    LDA ObjAngleWhole+2
     CMP PondHeartStartAngles, Y
     BNE @NextLoopHeart
 @SetUpHeart:
@@ -3523,7 +3508,7 @@ PondFairy_MoveHearts:
     ; Starting angle $18 (N).
     ;
     LDA #$18
-    STA ObjGridOffset, X
+    STA ObjAngleWhole, X
     ; This heart is right above the fairy. Set its X the same as the fairy's.
     ;
     LDA ObjX+1
@@ -3996,12 +3981,12 @@ UpdateFlyingGhini:
     ; But this doesn't seem to be used.
     ; The following call clobbers the A register.
     ;
-    LDA _Multi_0437, X
+    LDA Flyer_ObjDistTraveled, X
     AND #$01
     JMP DrawGhiniAndCheckCollisions
 
 ControlFlyingGhiniFlight:
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     JSR TableJump
 ControlFlyingGhiniFlight_JumpTable:
     .ADDR Flyer_SpeedUp
@@ -4056,13 +4041,13 @@ UpdatePeahat:
     ; Take low bit of the flying distance traveled as the frame image.
     ; So, the faster it moves, the faster it animates.
     ;
-    LDA _Multi_0437, X
+    LDA Flyer_ObjDistTraveled, X
     AND #$01
     JSR DrawObjectMirrored
     ; In flying state 5, check for all collisions (so it can get hurt).
     ; In all other states, only check for collisions with Link.
     ;
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     CMP #$05
     BEQ :+
     JMP CheckLinkCollision
@@ -4071,7 +4056,7 @@ UpdatePeahat:
     JMP CheckMonsterCollisions
 
 ControlPeahatFlight:
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     JSR TableJump
 ControlPeahatFlight_JumpTable:
     .ADDR Flyer_SpeedUp
@@ -4099,9 +4084,9 @@ Flyer_PeahatDecideState:
     INY                         ; Else go to state 4.
 Flyer_SetFlyingStateAnd6Turns:
     TYA
-    STA _Multi_0444, X
+    STA Flyer_ObjFlyingState, X
     LDA #$06                    ; Set 6 turns for the next state.
-    STA _Multi_042C, X
+    STA Flyer_ObjTurns, X
     RTS
 
 PlaySecretFoundTune:
@@ -4207,7 +4192,7 @@ UpdateWallmaster:
     ; Look up and set X coordinate according to the index returned.
     ;
     LDA WallmasterInitialXs, Y
-    JMP @SetUpToShow
+    JMP @SetUpToEmerge
 
 @CheckTopAndBottom:
     ; Check whether Wallmaster should come out of the top or bottom wall.
@@ -4241,11 +4226,11 @@ UpdateWallmaster:
     ; Set X coordinate to initial minor value returned.
     ;
     LDA $04
-@SetUpToShow:
+@SetUpToEmerge:
     STA ObjX, X
     ; Look up and set the facing direction for the first step.
     ;
-    LDY _Multi_0412, X
+    LDY Wallmaster_ObjStep, X
     LDA WallmasterDirsAndAttrsLeft, Y
     AND #$0F
     STA ObjDir, X
@@ -4264,7 +4249,7 @@ UpdateWallmaster:
     ;
     LDA #$00
     STA ObjGridOffset, X
-    STA _Multi_041F, X
+    STA Wallmaster_ObjTilesCrossed, X
     STA _ObjMovementFrame, X
     ; Start Wallmaster state 1.
     ;
@@ -4305,27 +4290,27 @@ L_Wallmaster_State1:
     STA ObjGridOffset, X
     ; Advance the step.
     ;
-    INC _Multi_0412, X
+    INC Wallmaster_ObjStep, X
     ; Set facing direction to the one for this new step.
     ;
-    LDY _Multi_0412, X
+    LDY Wallmaster_ObjStep, X
     LDA WallmasterDirsAndAttrsLeft, Y
     AND #$0F
     STA ObjDir, X
     ; Increase the count of tiles crossed.
     ;
-    INC _Multi_041F, X
+    INC Wallmaster_ObjTilesCrossed, X
     ; If the monster has crossed less than 7 tiles, then
     ; go draw and check collisions.
     ;
-    LDA _Multi_041F, X
+    LDA Wallmaster_ObjTilesCrossed, X
     CMP #$07
     BCC @Wallmaster_DrawAndCheckCollisions
     ; It has reached the end of a trip.
     ;
     ; If Wallmaster did not capture Link, then go set state to 0 and return.
     ;
-    LDA _Multi_042C, X
+    LDA ObjCaptureTimer, X
     BEQ @SetState
     ; At the end of a trip where Link was captured:
     ; 1. hide the special sprites used by Wallmaster
@@ -4346,13 +4331,13 @@ L_Wallmaster_State1:
 @Wallmaster_DrawAndCheckCollisions:
     ; If Link was captured, then go draw Link and Wallmaster specially.
     ;
-    LDA _Multi_042C, X
+    LDA ObjCaptureTimer, X
     BNE @DrawWithCapturedLink
     JSR CheckMonsterCollisions
     ; If after checking object collisions, Link was captured, then
     ; halt Link and keep him from being shoved.
     ;
-    LDA _Multi_042C, X
+    LDA ObjCaptureTimer, X
     BEQ :+
     LDA #$40
     STA ObjState
@@ -4436,7 +4421,7 @@ Wallmaster_PrepareToDraw:
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
     ; For the current step, look up the sprite flipping attributes.
     ;
-    LDY _Multi_0412, X
+    LDY Wallmaster_ObjStep, X
     LDA WallmasterDirsAndAttrsLeft, Y
     AND #$F0
     ORA #$01                    ; Combine them with palette row 5 (blue)
@@ -4468,7 +4453,7 @@ Wallmaster_PrepareToDraw:
 ; Store the initial offset for this axis.
 ;
 Wallmaster_CalcStartPosition:
-    STA _Multi_0412, X
+    STA Wallmaster_ObjStep, X
     STY $03                     ; [03] holds the Link's minimum major coordinate.
     ; If Link is still (input dir = 0), then use distance $24, else $32.
     ;
@@ -4486,10 +4471,10 @@ Wallmaster_CalcStartPosition:
     CPY $02                     ; [02] reference decreasing direction
     BNE :+
     PHA
-    LDA _Multi_0412, X
+    LDA Wallmaster_ObjStep, X
     CLC
     ADC #$08
-    STA _Multi_0412, X
+    STA Wallmaster_ObjStep, X
     PLA
     EOR #$FF
     CLC
@@ -4515,10 +4500,10 @@ Wallmaster_CalcStartPosition:
     LDA $01
     CMP $03                     ; [03] Link's minimum major coordinate
     BEQ :+
-    LDA _Multi_0412, X
+    LDA Wallmaster_ObjStep, X
     CLC
     ADC #$10
-    STA _Multi_0412, X
+    STA Wallmaster_ObjStep, X
     INY
 :
     RTS
@@ -4659,7 +4644,6 @@ UpdateRope:
     AND #$03
     JSR Anim_SetSpriteDescriptorAttributes
 @Draw:
-    ; TODO: name: movement frame
     ; The frame image is based on the movement frame.
     ;
     LDA _ObjMovementFrame, X
@@ -4724,7 +4708,7 @@ UpdateStalfos:
     BPL @SetShootTimer
     ; If stalfos does not want to shoot, then go set the qspeed.
     ;
-    LDA _Multi_0412, X
+    LDA ObjWantsToShoot, X
     BEQ @SetSpeed
     ; Else not temporarily invincible, and shoot timer = 0,
     ; and wants to shoot.
@@ -4769,7 +4753,7 @@ UpdateStalfos:
     ; Reset "wants to shoot" flag and the speed.
     ;
     LDA #$00
-    STA _Multi_0412, X
+    STA ObjWantsToShoot, X
 @ZeroSpeed:
     PLA                         ; Replace qspeed on the stack with 0.
     LDA #$00
@@ -4797,7 +4781,7 @@ InitMoldorm:
     ;
     LDA #$00
     STA a:ObjDir+1, Y
-    STA _ObjQSpeedFrac+1, Y
+    STA Moldorm_ObjBounceDir+1, Y
     STA ObjMetastate+1, Y
     STA ObjUninitialized+1, Y
     ; Copy object attributes from the first monster slot.
@@ -4811,9 +4795,9 @@ InitMoldorm:
     ; Start with flying speed $80, and in flying state 2.
     ;
     LDA #$80
-    STA _TitleWaveYs, Y
+    STA Flyer_ObjSpeed+1, Y
     LDA #$02
-    STA $0445, Y
+    STA Flyer_ObjFlyingState+1, Y
     LDA #$41                    ; All segments are considered Moldorm.
     STA ObjType+1, Y
     ; Bottom of the loop.
@@ -4828,13 +4812,13 @@ InitMoldorm:
     TAY
     LDA Directions8, Y
     STA ObjDir+5
-    STA $0385                   ; Also store the current direction as the old direction.
+    STA Moldorm_ObjOldDir+5     ; Also store the current direction as the old direction.
     LDA Random+10
     AND #$07
     TAY
     LDA Directions8, Y
     STA ObjDir+10
-    STA $038A                   ; Also store the current direction as the old direction.
+    STA Moldorm_ObjOldDir+10    ; Also store the current direction as the old direction.
     ; Set minimum number of turns 1 for flying states.
     ;
     ; By setting this, the first time that a flight control routine
@@ -4844,8 +4828,8 @@ InitMoldorm:
     ; randomly and set timer to $10.
     ;
     LDA #$01
-    STA $0431                   ; TODO: [042C][5]
-    STA $0436                   ; TODO: [042C][$A]
+    STA Flyer_ObjTurns+5
+    STA Flyer_ObjTurns+10
     LDA #$80                    ; The maximum speed for Moldorm is $80.
     STA FlyingMaxSpeedFrac
     LDA #$08                    ; TODO: Why 8 instead of 10?
@@ -4886,13 +4870,13 @@ InitDigdogger1:
     ; was reset; or will bet set during digdogger split-up.
     ;
     LDA #$3F
-    STA _Multi_041F, X
+    STA Digdogger_ObjSpeedFrac, X
     ; Set low target speed byte to $80.
     ; This assumes that the high byte is 0 from when the room
     ; was reset; or will bet set during digdogger split-up.
     ;
     LDA #$80
-    STA _Multi_0437, X
+    STA Digdogger_ObjTargetSpeedFrac, X
     ; Set child count of 3.
     ;
     LDA #$03
@@ -5023,7 +5007,7 @@ UpdateMoldorm:
     RTS
 
 ControlMoldormFlight:
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     JSR TableJump
 ControlMoldormFlight_JumpTable:
     .ADDR Moldorm_Chase
@@ -5073,8 +5057,7 @@ Moldorm_ChangeFlyingState:
     ; So, I believe that the point of this test is to delay moving
     ; the lower (not head) segments when starting out.
     ;
-    ; TODO: Base operand is ObjDir-1
-    LDA ObjY+19, X
+    LDA ObjDir-1, X
     BNE Moldorm_PropagateDirs
     RTS
 
@@ -5120,11 +5103,11 @@ Moldorm_PropagateDirs:
     ; If deferred bounce direction <> 0, then
     ; assign it to facing direction, and reset deferred bounce direction.
     ;
-    LDA _ObjQSpeedFrac, X
+    LDA Moldorm_ObjBounceDir, X
     BEQ @SkipBounce
     STA ObjDir, X
     LDA #$00
-    STA _ObjQSpeedFrac, X
+    STA Moldorm_ObjBounceDir, X
 @SkipBounce:
     ; Will loop 4 times, indexed by [00], once for each segment.
     ;
@@ -5140,8 +5123,8 @@ Moldorm_PropagateDirs:
     ; Copy old direction from a higher slot to the lower one;
     ; and to the lower one's facing direction.
     ;
-    LDA $0382, Y
-    STA $0381, Y
+    LDA Moldorm_ObjOldDir+2, Y
+    STA Moldorm_ObjOldDir+1, Y
     STA a:ObjDir+1, Y
     ; Bottom of the loop.
     ; Increment segment index.
@@ -5153,7 +5136,7 @@ Moldorm_PropagateDirs:
     ; Copy current direction to old direction.
     ;
     LDA ObjDir, X
-    STA _ObjMovingLimit, X
+    STA Moldorm_ObjOldDir, X
 L1156B_Exit:
     RTS
 
@@ -5172,9 +5155,9 @@ Flyer_MoldormDecideState:
     INY
 :
     TYA
-    STA _Multi_0444, X
+    STA Flyer_ObjFlyingState, X
     LDA #$08                    ; Set 8 turns for the next flying state.
-    STA _Multi_042C, X
+    STA Flyer_ObjTurns, X
     RTS
 
 DigdoggerCornerOffsetsX:
@@ -5195,7 +5178,7 @@ L_Digdogger_AfterFlute:
     ;
     ; If this is a child digdogger, then go turn and move as usual.
     ;
-    LDA $046B, X
+    LDA Digdogger_ObjIsChild, X
     BNE L_Digdogger_Turn
     ; Set object timer to $40, and increase flute state to 2.
     ; Then go check collisions as a big digdogger.
@@ -5244,15 +5227,15 @@ L_Digdogger_AfterFlute:
     ; Start with a target speed of $0100.
     ; The low byte is still 0 from when room data was reset.
     ;
-    INC _Multi_0444, X
+    INC Digdogger_ObjTargetSpeedWhole, X
     ; Flag this a child digdogger.
     ;
     LDA #$01
-    STA $046B, X
+    STA Digdogger_ObjIsChild, X
     ; The speed will increase.
     ;
     LDA #$00
-    STA $045E, X
+    STA Digdogger_ObjSpeedFlag, X
     ; Copy the parent's coordinates to the child.
     ;
     LDA ObjX+1
@@ -5315,7 +5298,7 @@ L_Digdogger_Move:
 L_Digdogger_DrawAndCheckCollisions:
     ; If this is a child, then finish updating this little digdogger.
     ;
-    LDA $046B, X
+    LDA Digdogger_ObjIsChild, X
     BEQ CheckBigDigdoggerCollisions
     JSR _BoundFlyer
     JSR CheckMonsterCollisions
@@ -5328,21 +5311,19 @@ CheckBigDigdoggerCollisions:
     PHA
     LDA ObjY, X
     PHA
-    ; TODO:
-    ; Reset [0478][X].
+    ; Reset the index of the current part.
     ;
     LDA #$00
-    STA $0478, X
+    STA Digdogger_ObjCurPart, X
 @LoopCornerCollision:
     ; Digdogger is big, but room boundary checks and
     ; object collision checks assume a 16x16 monster or smaller.
     ; Therefore, we have to check these things four times,
     ; in different corners of the boss.
     ;
-    ; TODO:
-    ; Loop 4 times, from 0 to 3, indexed by [0478][X].
+    ; Loop 4 times, from 0 to 3.
     ;
-    LDY $0478, X
+    LDY Digdogger_ObjCurPart, X
     ; Change the coordinates to one corner.
     ;
     LDA ObjX, X
@@ -5359,8 +5340,8 @@ CheckBigDigdoggerCollisions:
     JSR CheckMonsterCollisions
     ; Increase the loop index, and loop again until it = 4.
     ;
-    INC $0478, X
-    LDA $0478, X
+    INC Digdogger_ObjCurPart, X
+    LDA Digdogger_ObjCurPart, X
     CMP #$04
     BCC @LoopCornerCollision
     ; Restore the original coordinates.
@@ -5388,7 +5369,7 @@ L_Digdogger_DrawAsLittle:
     STA ObjX, X
     ; Save the child flag and object type.
     ;
-    LDA $046B, X
+    LDA Digdogger_ObjIsChild, X
     PHA
     LDA ObjType, X
     PHA
@@ -5398,14 +5379,14 @@ L_Digdogger_DrawAsLittle:
     LDA #$18
     STA ObjType, X
     LDA #$01
-    STA $046B, X
+    STA Digdogger_ObjIsChild, X
     JSR Digdogger_Draw
     ; Restore the child flag and object type.
     ;
     PLA
     STA ObjType, X
     PLA
-    STA $046B, X
+    STA Digdogger_ObjIsChild, X
     ; Restore the original coordinates.
     ;
     PLA
@@ -5415,7 +5396,7 @@ L_Digdogger_DrawAsLittle:
     RTS
 
 Digdogger_ChangeSpeed:
-    LDA $045E, X
+    LDA Digdogger_ObjSpeedFlag, X
     JSR TableJump
 Digdogger_ChangeSpeed_JumpTable:
     .ADDR Digdogger_SpeedUp
@@ -5424,21 +5405,21 @@ Digdogger_ChangeSpeed_JumpTable:
 Digdogger_SpeedUp:
     ; Add 1 to 16-bit speed.
     ;
-    INC _Multi_041F, X
+    INC Digdogger_ObjSpeedFrac, X
     BNE :+
-    INC _Multi_042C, X
+    INC Digdogger_ObjSpeedWhole, X
 :
     ; If the 16-bit speed has not reached the 16-bit target speed, then return.
     ;
-    LDA _Multi_041F, X
-    CMP _Multi_0437, X
+    LDA Digdogger_ObjSpeedFrac, X
+    CMP Digdogger_ObjTargetSpeedFrac, X
     BNE L116EA_Exit
-    LDA _Multi_042C, X
-    CMP _Multi_0444, X
+    LDA Digdogger_ObjSpeedWhole, X
+    CMP Digdogger_ObjTargetSpeedWhole, X
     BNE L116EA_Exit
     ; Set speed flag to 1 meaning decelerate.
     ;
-    INC $045E, X
+    INC Digdogger_ObjSpeedFlag, X
     ; Go set target speed to $0040 (or $0140 if this is a child).
     ;
     LDA #$40
@@ -5447,8 +5428,8 @@ Digdogger_SpeedUp:
 Digdogger_SlowDown:
     ; Subtract 1 from 16-bit speed.
     ;
-    DEC _Multi_041F, X
-    LDA _Multi_041F, X
+    DEC Digdogger_ObjSpeedFrac, X
+    LDA Digdogger_ObjSpeedFrac, X
     CMP #$FF
     BNE :+
 ; Unknown block
@@ -5457,27 +5438,27 @@ Digdogger_SlowDown:
 :
     ; If the 16-bit speed has not reached the 16-bit target speed, then return.
     ;
-    LDA _Multi_041F, X
-    CMP _Multi_0437, X
+    LDA Digdogger_ObjSpeedFrac, X
+    CMP Digdogger_ObjTargetSpeedFrac, X
     BNE L116EA_Exit
-    LDA _Multi_042C, X
-    CMP _Multi_0444, X
+    LDA Digdogger_ObjSpeedWhole, X
+    CMP Digdogger_ObjTargetSpeedWhole, X
     BNE L116EA_Exit
     ; Set speed flag to 0 meaning accelerate.
     ;
-    DEC $045E, X
+    DEC Digdogger_ObjSpeedFlag, X
     ; Set target speed to $0080.
     ;
     LDA #$80
 SetTargetSpeed:
-    STA _Multi_0437, X
+    STA Digdogger_ObjTargetSpeedFrac, X
     LDA #$00
-    STA _Multi_0444, X
+    STA Digdogger_ObjTargetSpeedWhole, X
     ; But if this is a child, then make the target speed $0180.
     ;
-    LDA $046B, X
+    LDA Digdogger_ObjIsChild, X
     BEQ L116EA_Exit
-    INC _Multi_0444, X
+    INC Digdogger_ObjTargetSpeedWhole, X
 L116EA_Exit:
     RTS
 
@@ -5494,14 +5475,14 @@ Digdogger_Move:
     ;
     ; See 04:A28E Manhandla_Move.
     ;
-    LDA _Multi_041F, X
+    LDA Digdogger_ObjSpeedFrac, X
     AND #$E0
     CLC                         ; Add the low speed byte to speed accumulator.
     ADC _Multi_0412, X
     STA _Multi_0412, X
     ; Assign (high speed byte + carry) to [03].
     ;
-    LDA _Multi_042C, X
+    LDA Digdogger_ObjSpeedWhole, X
     ADC #$00
     STA $03
     ; Change coordinates by the speed amount/offset in [03]
@@ -5569,7 +5550,7 @@ Digdogger_Draw:
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
     ; If this is a child digdogger, then go draw it.
     ;
-    LDA $046B, X
+    LDA Digdogger_ObjIsChild, X
     BNE @DrawLittle
     ; For each part of the big digdogger, from 0 to 3,
     ; indexed by Y register:
@@ -5723,17 +5704,17 @@ Aquamentus_Shoot:
     ;
     JSR ShootFireball55
     LDA #$00
-    STA $0478, Y
+    STA Aquamentus_ObjFireballOffset, Y
     ; Shoot the lower fireball. Its vertical displacement is 1.
     ;
     JSR ShootFireball55
     LDA #$01
-    STA $0478, Y
+    STA Aquamentus_ObjFireballOffset, Y
     ; Shoot the upper fireball. Its vertical displacement is -1.
     ;
     JSR ShootFireball55
     LDA #$FF
-    STA $0478, Y
+    STA Aquamentus_ObjFireballOffset, Y
     RTS
 
 @SpreadOutFireballs:
@@ -5757,7 +5738,7 @@ Aquamentus_Shoot:
     ;
     LDA ObjY, X
     CLC
-    ADC $0478, X
+    ADC Aquamentus_ObjFireballOffset, X
     STA ObjY, X
 @NextLoopObject:
     ; Bottom of the loop.
@@ -5922,7 +5903,7 @@ UpdateDodongoState0_Move:
     TYA
     PHA
     LDA #$20                    ; Turn rate $20
-    STA _Multi_041F, X
+    STA ObjTurnRate, X
     JSR Wanderer_TargetPlayer
     ; Pop the offset and add it to the X coordinate.
     ;
@@ -5958,7 +5939,7 @@ UpdateDodongoState2_Stunned:
     RTS
 
 UpdateDodongoState1_Bloated:
-    LDA _Multi_042C, X
+    LDA Dodongo_ObjBloatedSubstate, X
     JSR TableJump
 UpdateDodongoState1_Bloated_JumpTable:
     .ADDR UpdateDodongoState1_Bloated_Sub_Wait
@@ -5973,7 +5954,7 @@ UpdateDodongoState1_Bloated_Sub_Wait:
     ; 1:     go advance the substate
     ; other: go decrement Bloated timer
     ;
-    LDY $045E, X
+    LDY Dodongo_ObjBloatedTimer, X
     DEY
     BEQ @AdvanceSubstate
     BPL L_Dodongo_DecrementBloatedTimer
@@ -5981,7 +5962,7 @@ UpdateDodongoState1_Bloated_Sub_Wait:
     ;
     LDY _Multi_042C, X
     LDA DodongoBloatedWaitTimes, Y
-    STA $045E, X
+    STA Dodongo_ObjBloatedTimer, X
     ; If substate <> 0, go decrement bloated timer.
     ;
     CPY #$00
@@ -5993,19 +5974,19 @@ UpdateDodongoState1_Bloated_Sub_Wait:
     STA a:ObjState, Y
     ; Increment the number of bomb hits.
     ;
-    LDA _Multi_0437, X
+    LDA Dodongo_ObjBombHits, X
     CLC
     ADC #$01
-    STA _Multi_0437, X
+    STA Dodongo_ObjBombHits, X
     JMP L_Dodongo_DecrementBloatedTimer
 
 @AdvanceSubstate:
     ; Advance the substate.
     ;
-    INC _Multi_042C, X
+    INC Dodongo_ObjBloatedSubstate, X
     ; If new bloated substate < 2, then go decrement the bloated timer.
     ;
-    LDA _Multi_042C, X
+    LDA Dodongo_ObjBloatedSubstate, X
     CMP #$02
     BCC L_Dodongo_DecrementBloatedTimer
     ; New bloated substate >= 2.
@@ -6018,15 +5999,15 @@ UpdateDodongoState1_Bloated_Sub_Wait:
     ;   and then transition to substate 3.
     ; - If new substate = 3, then the next frame the monster will die.
     ;
-    LDY _Multi_0437, X
+    LDY Dodongo_ObjBombHits, X
     CPY #$02
     BCS L_Dodongo_DecrementBloatedTimer
     LDA #$04
-    STA _Multi_042C, X
+    STA Dodongo_ObjBloatedSubstate, X
 L_Dodongo_DecrementBloatedTimer:
     ; Either way, decrement the bloated timer.
     ;
-    DEC $045E, X
+    DEC Dodongo_ObjBloatedTimer, X
     RTS
 
 UpdateDodongoState1_Bloated_Sub_Die:
@@ -6034,7 +6015,7 @@ UpdateDodongoState1_Bloated_Sub_Die:
     JSR PlayBossDeathCry
 UpdateDodongoState1_Bloated_Sub_End:
     JSR ResetObjState           ; Go to state 0.
-    STA _Multi_042C, X          ; Reset bloated substate.
+    STA Dodongo_ObjBloatedSubstate, X    ; Reset bloated substate.
     RTS
 
 Dodongo_CheckCollisions:
@@ -6228,7 +6209,7 @@ Dodongo_TryEatBomb:
     LDY #$10
     LDA #$00
     STA a:ObjState, Y
-    STA _Multi_042C, X
+    STA Dodongo_ObjBloatedSubstate, X
 @Exit:
     RTS
 
@@ -6343,7 +6324,7 @@ Dodongo_Draw:
     ;
     ; In substate 0, go animate as usual for walking.
     ;
-    LDY _Multi_042C, X
+    LDY Dodongo_ObjBloatedSubstate, X
     BEQ @DrawWalkingFast
     ; If in bloated substates 2 or 3 (last wait or die), then
     ; go fade the boss; so that some frames are not drawn.
@@ -6518,7 +6499,6 @@ UpdateDarknut:
     ;
     LSR
     LSR
-    ; TODO: name: movement frame
     ; If movement frame = 1, add 3 to frame image to access
     ; the second animation frame's images.
     ;
@@ -6526,7 +6506,6 @@ UpdateDarknut:
     BEQ :+
     CLC
     ADC #$03
-    ; TODO: name: movement frame
     ; Also if movement frame = 1, and facing up, then flip horizontally.
     ;
     ; Down has two frame images, but up only has one. By flipping
@@ -6590,15 +6569,11 @@ UpdatePolsVoice:
     ; If grid offset = 0, then no more distance to cover.
     ; So, go change to state 1 -- jumping.
     ;
-    ; MULTI: [0394]
-    ;
-    LDA ObjGridOffset, X
+    LDA ObjRemDistance, X
     BEQ @SetState1
     ; Decrement grid offset / distance remaining.
     ;
-    ; MULTI: [0394]
-    ;
-    DEC ObjGridOffset, X
+    DEC ObjRemDistance, X
     ; Move vertically.
     ; Add the Y offset for the current direction to the Y coordinate.
     ;
@@ -6615,7 +6590,7 @@ UpdatePolsVoice:
     ; If the unwalkable tile is a block, or >= $F4 (water, screen edge bricks),
     ; then go change to state 1.
     ;
-    LDA _Multi_041F, X
+    LDA PolsVoice_ObjLastTile, X
     AND #$FC
     CMP #$B0
     BEQ @SetState1
@@ -6675,14 +6650,14 @@ UpdatePolsVoice:
     ; Set the vertical speed for the beginning of the jump.
     ;
     LDA PolsVoiceInitialJumpSpeeds, Y
-    STA _Multi_0412, X
+    STA PolsVoice_ObjSpeedWhole, X
     ; Look up the Y offset for the current direction.
     ; Add it to object Y to set the destination Y of the jump.
     ;
     LDA ObjY, X
     CLC
     ADC PolsVoiceDestinationYOffsets, Y
-    STA _Multi_042C, X
+    STA PolsVoice_ObjTargetY, X
     ; Turn the index into a direction again by adding 1.
     ; Store the facing direction.
     ;
@@ -6706,15 +6681,15 @@ L_PolsVoice_DrawAndCheckCollisions:
 UpdatePolsVoiceState1_Jumping:
     ; Add acceleration $38 to low speed byte (vertical).
     ;
-    LDA _Multi_0444, X
+    LDA PolsVoice_ObjSpeedFrac, X
     CLC
     ADC #$38
-    STA _Multi_0444, X
+    STA PolsVoice_ObjSpeedFrac, X
     ; Add Carry to high speed byte (vertical).
     ;
-    LDA _Multi_0412, X
+    LDA PolsVoice_ObjSpeedWhole, X
     ADC #$00
-    STA _Multi_0412, X
+    STA PolsVoice_ObjSpeedWhole, X
     ; Add high speed byte to Y coordinate.
     ;
     CLC
@@ -6722,12 +6697,12 @@ UpdatePolsVoiceState1_Jumping:
     STA ObjY, X
     ; If the speed is still negative, then return.
     ;
-    LDA _Multi_0412, X
+    LDA PolsVoice_ObjSpeedWhole, X
     BMI @Exit
     ; If Y coordinate still < target Y, then return.
     ;
     LDA ObjY, X
-    CMP _Multi_042C, X
+    CMP PolsVoice_ObjTargetY, X
     BCC @Exit
     ; Else reached the destination. Go to state 0.
     ;
@@ -6735,8 +6710,8 @@ UpdatePolsVoiceState1_Jumping:
     STA ObjState, X
     ; Reset 16-bit vertical speed.
     ;
-    STA _Multi_0444, X
-    STA _Multi_0412, X
+    STA PolsVoice_ObjSpeedFrac, X
+    STA PolsVoice_ObjSpeedWhole, X
     ; Choose a random direction to face in.
     ;
     LDA Random, X
@@ -6749,7 +6724,7 @@ UpdatePolsVoiceState1_Jumping:
     LDA Random, X
     AND #$40
     ADC #$30
-    STA ObjGridOffset, X        ; MULTI: [0394]
+    STA ObjRemDistance, X
     ; Align the monster with a square horizontally.
     ;
     ; If in the left half of a square, align with that square.
@@ -6829,7 +6804,7 @@ PolsVoice_GetCollidingTile:
     CMP ObjectFirstUnwalkableTile
     ; Remember the tile that the monster is over.
     ;
-    STA _Multi_041F, X
+    STA PolsVoice_ObjLastTile, X
     RTS
 
 ; Returns:
@@ -6849,7 +6824,7 @@ PolsVoice_MoveX:
 UpdateLikeLike:
     ; If the monster captured Link, then go handle it.
     ;
-    LDA _Multi_042C, X
+    LDA ObjCaptureTimer, X
     BNE @HandleCaptured
     LDA #$80                    ; Turn rate $80
     JSR UpdateCommonWanderer
@@ -6874,7 +6849,7 @@ UpdateLikeLike:
     ; Check collisions. If Link was not captured, then return.
     ;
     JSR CheckMonsterCollisions
-    LDA _Multi_042C, X
+    LDA ObjCaptureTimer, X
     BEQ @Exit
     ; The monster captured Link.
     ; Put the monster at the same location as him.
@@ -6883,8 +6858,7 @@ UpdateLikeLike:
     STA ObjX, X
     LDA ObjY
     STA ObjY, X
-    ; TODO:
-    ; Reset Link's timer, metastate? , and shove info.
+    ; Reset Link's timer, metastate, and shove info.
     ;
     LDA #$00
     STA ObjTimer
@@ -6916,10 +6890,10 @@ UpdateLikeLike:
 @IncCaptureTime:
     ; Increment capture time.
     ;
-    INC _Multi_042C, X
+    INC ObjCaptureTimer, X
     ; Once capture time >= $60 screen frames, remove the magic shield.
     ;
-    LDA _Multi_042C, X
+    LDA ObjCaptureTimer, X
     CMP #$60
     BCC @DrawAfterCapture
     LDA #$00
@@ -6927,7 +6901,7 @@ UpdateLikeLike:
     ; Set a value above $60 over and over.
     ;
     LDA #$C0
-    STA _Multi_042C, X
+    STA ObjCaptureTimer, X
 @DrawAfterCapture:
     ; In this state, we have to draw Like-like over Link.
     ; So, don't use the usual sprite writing code that cycles sprites.
@@ -7045,8 +7019,6 @@ CheckVireCollisions:
 DrawVire:
     LDA #$0A                    ; Animation counter $A
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
-    ; TODO: name: movement frame
-    ;
     ; The movement frame is the fram image number, unless facing up.
     ; In this case, add 2 to the frame image.
     ;
@@ -7080,7 +7052,7 @@ Wizzrobe_DrawAndCheckCollisionsIntermittently:
     ; When not 0, the monster is teleporting, and must be drawn
     ; translucently -- every other frame.
     ;
-    LDA ObjGridOffset, X
+    LDA ObjRemDistance, X
     LSR
     BCS L11E17_Exit
 L_Wizzrobe_DrawAndCheckCollisions:
@@ -7096,9 +7068,9 @@ BlueWizzrobe_WalkOrTeleport:
     ; If there is still distance to go while translucent, then
     ; decrement the distance remaining, and move.
     ;
-    LDA ObjGridOffset, X
+    LDA ObjRemDistance, X
     BEQ @WalkAgain
-    DEC ObjGridOffset, X
+    DEC ObjRemDistance, X
     JMP BlueWizzrobe_MoveAndCheckTile
 
 @WalkAgain:
@@ -7141,7 +7113,7 @@ BlueWizzrobe_MoveAndCheckTile:
     BCC @Exit
     ; Go handle a wall, if the tile is not a block nor water.
     ;
-    LDA _Multi_041F, X
+    LDA Wizzrobe_ObjLastTile, X
     AND #$FC
     CMP #$B0
     BEQ @HitBlockOrWater
@@ -7151,7 +7123,7 @@ BlueWizzrobe_MoveAndCheckTile:
     ; If the monster was already teleporting, then return,
     ; so that it moves again next frame.
     ;
-    LDA ObjGridOffset, X
+    LDA ObjRemDistance, X
     BNE L11E17_Exit
     ; Else go start teleporting thru this obstacle.
     ;
@@ -7191,20 +7163,20 @@ BlueWizzrobe_AdvanceCounterAndTurnTowardLinkIfNeeded:
     ;
     ; Increment the turn counter.
     ;
-    INC _Multi_0412, X
+    INC BlueWizzrobe_ObjTurnCounter, X
 L_BlueWizzrobe_TurnTowardLinkIfNeeded:
     ; Description:
     ; When the counter is a multiple of $40, switch between facing
     ; toward Link horizontally or vertically. All other times, return.
     ;
-    LDA _Multi_0412, X
+    LDA BlueWizzrobe_ObjTurnCounter, X
     AND #$3F
     BNE L11EAF_Exit
 BlueWizzrobe_TurnTowardLink:
     ; If the multiple of $40 is even, then turn horizontally,
     ; else vertically.
     ;
-    LDA _Multi_0412, X
+    LDA BlueWizzrobe_ObjTurnCounter, X
     AND #$40
     BNE @TurnVertically
     ; If the monster's X >= Link's X, then choose left, else right.
@@ -7320,12 +7292,12 @@ BeginTeleporting:
     ; Will move $20 pixels horizontally and vertically.
     ;
     LDA #$20
-    STA ObjGridOffset, X
+    STA ObjRemDistance, X
     ; Flip bit 6 of turn counter; so that we change the axis to turn toward.
     ;
-    LDA _Multi_0412, X
+    LDA BlueWizzrobe_ObjTurnCounter, X
     EOR #$40
-    STA _Multi_0412, X
+    STA BlueWizzrobe_ObjTurnCounter, X
     ; Reset the timer to note that the monster is teleporting.
     ; Align with the nearest square.
     ;
@@ -7425,14 +7397,14 @@ Wizzrobe_GetBaseCollidableTile:
     CMP ObjectFirstUnwalkableTile
     ; Store the last collided tile.
     ;
-    STA _Multi_041F, X
+    STA Wizzrobe_ObjLastTile, X
     RTS
 
 BlueWizzrobe_TryShooting:
     ; Once every $20 frames, and when not fading, we'll try to shoot.
     ; Otherwise, return.
     ;
-    LDA ObjGridOffset, X
+    LDA ObjRemDistance, X
     BNE L11F7E_Exit
     LDA FrameCounter
     AND #$1F
@@ -7515,7 +7487,7 @@ UpdateRedWizzrobe:
 :
     ; Else increase animation counter and decrease state every frame.
     ;
-    INC _Multi_0412, X
+    INC RedWizzrobe_ObjAnimCounter, X
     DEC ObjState, X
     ; Shift the state right 6 times to get the index (0 to 3) of a state routine.
     ;
@@ -7560,7 +7532,7 @@ UpdateRedWizzrobe_1:
     ; Increment the fade counter. Depending on the low bit,
     ; the monster will be drawn every other frame.
     ;
-    INC ObjGridOffset, X
+    INC RedWizzrobe_ObjFadeCounter, X
     JMP Wizzrobe_DrawAndCheckCollisionsIntermittently
 
 UpdateRedWizzrobe_3:
@@ -7651,7 +7623,7 @@ Wizzrobe_DrawAndCheckCollisions:
     JSR CheckLinkCollision
     ; Every 4 frames switch between two frame images.
     ;
-    LDA _Multi_0412, X
+    LDA RedWizzrobe_ObjAnimCounter, X
     LSR
     LSR
     AND #$01
@@ -7692,18 +7664,18 @@ InitGleeok:
     ; Set the X of the current segment of each neck to $7C.
     ;
     LDA #$7C
-    STA _DemoPhase0Subphase1Timer, X
-    STA _ObjShootTimer+1, X
-    STA $046C, X
-    STA ObjGridOffset+1, X
+    STA Gleeok_NeckXs0, X
+    STA Gleeok_NeckXs1, X
+    STA Gleeok_NeckXs2, X
+    STA Gleeok_NeckXs3, X
     STA ObjX+1, X               ; I don't think this one is needed.
     ; Look up and set the Y of the current segment of each neck.
     ;
     LDA GleeokSegmentYs, X
-    STA $0445, X
-    STA $045F, X
-    STA $0479, X
-    STA _ObjQSpeedFrac+1, X
+    STA Gleeok_NeckYs0, X
+    STA Gleeok_NeckYs1, X
+    STA Gleeok_NeckYs2, X
+    STA Gleeok_NeckYs3, X
     STA ObjY+1, X               ; I don't think this one is needed.
     ; Set HP of each neck to $A0.
     ;
@@ -7737,36 +7709,36 @@ InitGleeok:
     ;
     ; Leave the other other speed flags 0 (accelerate).
     ;
-    STX _TitleWaveYs+2
-    STX $0430
-    STX $0383
-    STX _ObjPosFrac+4
+    STX Gleook_HeadInfo0+GLEEOK_SPEEDX
+    STX Gleook_HeadInfo1+GLEEOK_SPEEDY
+    STX Gleook_HeadInfo2+GLEEOK_SPEEDX
+    STX Gleook_HeadInfo3+GLEEOK_SPEEDY
     ; Set the V-direction counter of all necks to 3.
     ;
     LDA #$03
-    STA _TitleWaveYs+1
-    STA _DemoLineTextIndex
-    STA $0382
-    STA _ObjPosFrac+2
+    STA Gleook_HeadInfo0+GLEEOK_DIRCOUNTERV
+    STA Gleook_HeadInfo1+GLEEOK_DIRCOUNTERV
+    STA Gleook_HeadInfo2+GLEEOK_DIRCOUNTERV
+    STA Gleook_HeadInfo3+GLEEOK_DIRCOUNTERV
     ; Set the H-direction counter of all necks to 6.
     ;
     ASL
-    STA _TitleWaveYs
-    STA DemoSubphase
-    STA $0381
-    STA _ObjPosFrac+1
+    STA Gleook_HeadInfo0+GLEEOK_DIRCOUNTERH
+    STA Gleook_HeadInfo1+GLEEOK_DIRCOUNTERH
+    STA Gleook_HeadInfo2+GLEEOK_DIRCOUNTERH
+    STA Gleook_HeadInfo3+GLEEOK_DIRCOUNTERH
     ; Set neck 1 head delay timer to 12.
     ;
     ASL
-    STA $0432
+    STA Gleook_HeadInfo1+GLEEOK_DELAY
     ; Set neck 2 head delay timer to 24.
     ;
     ASL
-    STA $0386
+    STA Gleook_HeadInfo2+GLEEOK_DELAY
     ; Set neck 3 head delay timer to 36.
     ;
-    ADC $0432
-    STA _ObjPosFrac+6
+    ADC Gleook_HeadInfo1+GLEEOK_DELAY
+    STA Gleook_HeadInfo3+GLEEOK_DELAY
     ; Leave neck 0 head delay timer as 0.
     ;
     RTS
@@ -7815,7 +7787,7 @@ InitManhandla:
     ; for each animation frame.
     ;
     LDA ManhandlaBaseFrameImagesAndAttrs, Y
-    STA $0479, Y
+    STA Manhandla_ObjFrame+1, Y
     ; All segments start out autonomous, and can update immediately.
     ;
     LDA #$00
@@ -7844,7 +7816,7 @@ InitManhandla:
     ; Set low speed byte $80.
     ;
     LDA #$80
-    STA _TitleWaveYs, Y
+    STA Manhandla_ObjSpeedFrac+1, Y
     DEY
     BPL :-
     RTS
@@ -7860,7 +7832,7 @@ InitGohma:
     STA ObjInvincibilityMask, X
     ; Set shoot timer to 1, so that Gohma doesn't shoot right away.
     ;
-    INC _ObjMovingLimit, X
+    INC Gohma_ObjShootTimer, X
     ; Start at location ($80, $70).
     ;
     LDA #$80
@@ -7876,7 +7848,7 @@ InitGleeokHead:
     LDA #$E0
     STA FlyingMaxSpeedFrac
     LDA #$BF
-    STA _Multi_041F, X
+    STA Flyer_ObjSpeed, X
     RTS
 
 UpdateManhandla:
@@ -7886,7 +7858,7 @@ UpdateManhandla:
     BNE @MoveBase
     ; If no segment just died, then skip increasing the speed.
     ;
-    LDA $0383
+    LDA Manhandla_SegmentJustDied
     BEQ @BounceIfNeeded
     ; For each segment from 4 to 0, indexed by Y register:
     ;
@@ -7894,30 +7866,26 @@ UpdateManhandla:
 @LoopSegment:
     ; Add $80 to the low speed byte of this segment.
     ;
-    ; MULTI: 041F+1
-    ;
-    LDA _TitleWaveYs, Y
+    LDA Manhandla_ObjSpeedFrac+1, Y
     CLC
     ADC #$80
     STA _TitleWaveYs, Y
     ; Carry to the high speed byte of this segment.
     ;
-    ; MULTI: 042C+1
-    ;
-    LDA DemoSubphase, Y
+    LDA Manhandla_ObjSpeedWhole+1, Y
     ADC #$00
-    STA DemoSubphase, Y
+    STA Manhandla_ObjSpeedWhole+1, Y
     DEY
     BPL @LoopSegment
     ; Reset the "a segment just died" flag.
     ;
     LDA #$00
-    STA $0383
+    STA Manhandla_SegmentJustDied
 @BounceIfNeeded:
     ; If there's a bounce direction, then assign it to the facing
     ; direction of all segments.
     ;
-    LDA $0385
+    LDA Manhandla_BounceDir
     BEQ @TurnIfNeeded
     JSR Manhandla_SetAllSegmentsDirection
 @TurnIfNeeded:
@@ -7936,7 +7904,7 @@ UpdateManhandla:
     JSR TurnRandomlyDir8
 @CopyDirToHands:
     LDA ObjDir+5
-    STA $0385
+    STA Manhandla_BounceDir
     JSR Manhandla_SetAllSegmentsDirection
 @MoveBase:
     ; If this segment is the base, then remember the
@@ -7958,12 +7926,12 @@ UpdateManhandla:
     LDA ObjDir, X
     CMP $0384
     BEQ :+
-    STA $0385
+    STA Manhandla_BounceDir
 :
     ; Store in [00] the animation frame that you get from the frame accumulator:
     ; frame := ((accumulator AND $10) >> 4
     ;
-    LDA _ObjShootTimer, X
+    LDA Manhandla_ObjFrameAccum, X
     AND #$10
     LSR
     LSR
@@ -7973,10 +7941,10 @@ UpdateManhandla:
     ; Copy the animation frame bit into the "frame image and
     ; sprite attributes" byte.
     ;
-    LDA $0478, X
+    LDA Manhandla_ObjFrame, X
     AND #$FE
     ORA $00
-    STA $0478, X
+    STA Manhandla_ObjFrame, X
     ; If this segment is the base, then go draw.
     ;
     CPX #$05
@@ -7984,12 +7952,15 @@ UpdateManhandla:
     ; If the old and new "frame image and sprite attributes" variables
     ; are the same, then go draw.
     ;
-    LDA $0478, X
-    CMP _Multi_0437, X          ; This begins with value 0, because all room data was reset on entry.
+    ; The previous frame value begins with value 0, because all
+    ; room data was reset on entry.
+    ;
+    LDA Manhandla_ObjFrame, X
+    CMP Manhandla_ObjPrevFrame, X
     BEQ @Draw
     ; Copy the new value to the old variable, so that they're the same.
     ;
-    STA _Multi_0437, X
+    STA Manhandla_ObjPrevFrame, X
     ; If animation frame = 1, then go draw.
     ;
     ; The low bit of "frame image and sprite attributes" byte
@@ -8096,7 +8067,7 @@ Manhandla_CheckCollisions:
 @FlagHandDied:
     ; Set the "segment just died" flag.
     ;
-    INC $0383
+    INC Manhandla_SegmentJustDied
 @Exit:
     RTS
 
@@ -8134,14 +8105,14 @@ Manhandla_Move:
     ;
     ; AND'ing the low speed byte with $E0 isn't strictly needed.
     ;
-    LDA _Multi_041F, X
+    LDA Manhandla_ObjSpeedFrac, X
     AND #$E0
     CLC                         ; Add the low speed byte to speed accumulator.
-    ADC _Multi_0412, X
-    STA _Multi_0412, X
+    ADC Manhandla_ObjSpeedAccum, X
+    STA Manhandla_ObjSpeedAccum, X
     ; Assign (high speed byte + carry) to [03].
     ;
-    LDA _Multi_042C, X
+    LDA Manhandla_ObjSpeedWhole, X
     ADC #$00
     STA $03
     ; Change coordinates by the speed amount/offset in [03]
@@ -8201,8 +8172,8 @@ Manhandla_Move:
     AND #$03
     CLC
     ADC $03
-    ADC _ObjShootTimer, X
-    STA _ObjShootTimer, X
+    ADC Manhandla_ObjFrameAccum, X
+    STA Manhandla_ObjFrameAccum, X
     JSR _BoundFlyer
     ; TODO:
     ; I don't see why this is needed.
@@ -8213,7 +8184,7 @@ Manhandla_Draw:
     JSR Anim_FetchObjPosForSpriteDescriptor
     ; Push the "frame image and sprite attributes" value.
     ;
-    LDA $0478, X
+    LDA Manhandla_ObjFrame, X
     PHA
     ; Bit 7 is the sprite attribute for vertical flipping, and can be
     ; passed along as is.
@@ -8248,7 +8219,7 @@ Manhandla_Draw:
 UpdateGohma:
     ; If flagged not to continue straight, then choose a random facing direction.
     ;
-    LDA _ObjShootTimer, X
+    LDA Gohma_ObjGoStraight, X
     BNE @Move
     ; If Random:
     ;   >= $B0: right
@@ -8267,7 +8238,7 @@ UpdateGohma:
     STA ObjDir, X
     ; Now we can go straight without changing direction for some time.
     ;
-    INC _ObjShootTimer, X
+    INC Gohma_ObjGoStraight, X
     ; Go animate the eye.
     ;
     JMP @AnimateEye
@@ -8275,16 +8246,16 @@ UpdateGohma:
 @Move:
     ; Add $80 to the movement accumulator.
     ;
-    LDA _Multi_041F, X
+    LDA Gohma_ObjMoveAccum, X
     CLC
     ADC #$80
-    STA _Multi_041F, X
+    STA Gohma_ObjMoveAccum, X
     ; If movement accumulator didn't overflow, then go animate the eye.
     ;
     BCC @AnimateEye
     ; Increase the distance traveled, and move 1.
     ;
-    INC _Multi_0412, X
+    INC Gohma_ObjDistTraveled, X
     ; Set a direction mask in [02], starting with right (1).
     ;
     LDA #$01
@@ -8319,24 +8290,24 @@ UpdateGohma:
 :
     ; If Gohma has not traveled $20 pixels, then go animate the eye.
     ;
-    LDA _Multi_0412, X
+    LDA Gohma_ObjDistTraveled, X
     CMP #$20
     BNE @AnimateEye
     ; Gohma has traveled $20 pixels. Reset the distance traveled.
     ; Reverse the facing direction, and increase the number of sprints.
     ;
     LDA #$00
-    STA _Multi_0412, X
+    STA Gohma_ObjDistTraveled, X
     JSR ReverseObjDir8
-    LDA $045E, X
-    INC $045E, X
+    LDA Gohma_ObjSprints, X
+    INC Gohma_ObjSprints, X
     ; If the previous number of sprints was odd, then flag that Gohma
     ; should randomly change direction.
     ;
     LSR
     BCC @AnimateEye
     LDA #$00
-    STA _ObjShootTimer, X
+    STA Gohma_ObjGoStraight, X
 @AnimateEye:
     ; Animate the eye.
     ;
@@ -8347,29 +8318,29 @@ UpdateGohma:
     ; Note that $C0 is not a number of frames, because it's changed
     ; every other frame.
     ;
-    LDA _Multi_042C, X
+    LDA Gohma_ObjNextOpenEyeCounter, X
     BNE @DecNextOpenEyeCounter
     LDA #$80
-    STA _Multi_0444, X
+    STA Gohma_ObjEyeOpenTimer, X
     LDA #$C0
     ORA Random, X
-    STA _Multi_042C, X
+    STA Gohma_ObjNextOpenEyeCounter, X
 @DecNextOpenEyeCounter:
     ; Decrement the next-open-eye counter.
     ;
     LDA FrameCounter
     LSR
     BCC :+
-    DEC _Multi_042C, X
+    DEC Gohma_ObjNextOpenEyeCounter, X
 :
     ; If open eye timer = 0, then the eye is closed.
     ; Go animate it differently.
     ;
-    LDA _Multi_0444, X
+    LDA Gohma_ObjEyeOpenTimer, X
     BEQ @AnimateClosedEye
     ; Else decrement the open eye timer.
     ;
-    DEC _Multi_0444, X
+    DEC Gohma_ObjEyeOpenTimer, X
     ; If open eye timer >= $70 and < $10, then the eye is fully open.
     ; So, set its frame image to 2. Else use 3 for a half open eye.
     ;
@@ -8382,22 +8353,22 @@ UpdateGohma:
 :
     TYA
 @SetEyeStateAndShoot:
-    STA $046B, X
+    STA Gohma_ObjEyeState, X
 @ShootAnimateCollide:
     ; Decrement the shoot timer.
     ;
-    DEC _ObjMovingLimit, X
+    DEC Gohma_ObjShootTimer, X
     ; If it became 0, then set it to $41, and shoot fireball $56.
     ;
     BNE @AnimateAndCheckCollisions
     LDA #$41
-    STA _ObjMovingLimit, X
+    STA Gohma_ObjShootTimer, X
     LDA #$56
     JSR ShootFireball
 @AnimateAndCheckCollisions:
     ; Pass the frame image for the eye.
     ;
-    LDA $046B, X
+    LDA Gohma_ObjEyeState, X
     JSR Gohma_AnimateAndDraw
     JMP Gohma_CheckCollisions
 
@@ -8406,16 +8377,16 @@ UpdateGohma:
     ; Increment the animation counter, and if <> 8, then
     ; go shoot, draw, and check collisions.
     ;
-    INC $0478, X
-    LDA $0478, X
+    INC Gohma_ObjEyeAnimCounter, X
+    LDA Gohma_ObjEyeAnimCounter, X
     CMP #$08
     BNE @ShootAnimateCollide
     ; Roll over the eye animation counter to 0.
     ; Clear bit 1 and invert bit 0 to switch between frame images 0 and 1.
     ;
     LDA #$00
-    STA $0478, X
-    LDA $046B, X
+    STA Gohma_ObjEyeAnimCounter, X
+    LDA Gohma_ObjEyeState, X
     AND #$01
     EOR #$01
     ; Go set eye state/frame image, shoot, draw, and check collisions
@@ -8544,7 +8515,7 @@ Gohma_HandleWeaponCollision:
 @CheckEyeOpen:
     ; If the state of the eye is not 3, then go parry.
     ;
-    LDA $046B, X
+    LDA Gohma_ObjEyeState, X
     CMP #$03
     BNE @PlayParryTune
     ; If the direction of the arrow is not up, then go parry.
@@ -8647,8 +8618,7 @@ UpdateGleeok:
     LDA ObjType+1
     SEC
     SBC #$42
-    ; TODO:
-    ; For each neck, counting down, indexed by [04D7]:
+    ; For each neck, counting down:
     ;
     STA GleeokCurNeck
 @LoopNeck:
@@ -8677,7 +8647,7 @@ UpdateGleeok:
     LDA ($02), Y
     STA a:ObjY+1, Y
     LDA ($04), Y
-    STA _TriforceGlowCycle, Y
+    STA Gleeok_ObjHeadInfo, Y
     DEY
     BPL @LoadNeckBytes
     ; Each screen frame, one neck is chosen to move and try to shoot.
@@ -8715,7 +8685,7 @@ UpdateGleeok:
     STA ($00), Y
     LDA a:ObjY+1, Y
     STA ($02), Y
-    LDA _TriforceGlowCycle, Y
+    LDA Gleeok_ObjHeadInfo, Y
     STA ($04), Y
     DEY
     BPL @SaveNeckBytes
@@ -9178,7 +9148,7 @@ Gleeok_CheckCollisions:
     BEQ :+
     LDA #$06
     STA GleeokAnimationTimer
-    STA _ActiveRedLeeverCount
+    STA Gleeok_WrithingCounter
 :
     JSR ResetShoveInfo
     ; If this is the bottom segment, then go reset metastate and loop again.
@@ -9268,7 +9238,6 @@ Gleeok_CheckCollisions:
     ; If they're equal, then go handle the whole boss dying.
     ;
     BEQ @BossDied
-    ; TODO:
     ; Else reset object metastate of the segment, and return.
     ;
     JMP ResetObjMetastate
@@ -9315,62 +9284,62 @@ Gleeok_CheckCollisions:
 Gleeok_MoveHead:
     ; Don't do anything until the head's initial timer expires.
     ;
-    LDA DemoLineAttrVramAddrHi
+    LDA Gleeok_ObjHeadDelay
     BNE Gleeok_DecHeadTimer
     ; Add 1 or -1 to X as needed.
     ;
     LDA ObjX+5
-    LDY _ScrolledScreenCount
+    LDY Gleeok_ObjHeadSpeedX
     JSR Gleeok_ChangeCoordinateBySpeedFlag
     STA ObjX+5
     ; Add 1 or -1 to Y as needed.
     ;
     LDA ObjY+5
-    LDY $0416
+    LDY Gleeok_ObjHeadSpeedY
     JSR Gleeok_ChangeCoordinateBySpeedFlag
     STA ObjY+5
     ; Increment the counter to change directions.
     ; If it's still < 4, then return.
     ;
-    INC DemoLineAttrVramAddrLo
-    LDA DemoLineAttrVramAddrLo
+    INC Gleeok_ObjHeadDirChangeCounter
+    LDA Gleeok_ObjHeadDirChangeCounter
     CMP #$04
     BCC L127FA_Exit
     ; The counter reached 4. So, reset it.
     ; Then check the individual direction counters.
     ;
     LDA #$00
-    STA DemoLineAttrVramAddrLo
+    STA Gleeok_ObjHeadDirChangeCounter
     ; Increment the horizontal direction counter.
     ; If >= $C, then reset the counter, and flip direction.
     ;
-    INC _TriforceGlowCycle
-    LDA _TriforceGlowCycle
+    INC Gleeok_ObjHeadDirCounterH
+    LDA Gleeok_ObjHeadDirCounterH
     CMP #$0C
     BCC @CheckVertical
     LDA #$00
-    STA _TriforceGlowCycle
-    LDA _ScrolledScreenCount
+    STA Gleeok_ObjHeadDirCounterH
+    LDA Gleeok_ObjHeadSpeedX
     EOR #$FF
-    STA _ScrolledScreenCount
+    STA Gleeok_ObjHeadSpeedX
 @CheckVertical:
     ; Increment the vertical direction counter.
     ; If >= 6, then reset the counter, and flip direction.
     ;
-    INC $0414
-    LDA $0414
+    INC Gleeok_ObjHeadDirCounterV
+    LDA Gleeok_ObjHeadDirCounterV
     CMP #$06
     BCC L127FA_Exit
     LDA #$00
-    STA $0414
-    LDA $0416
+    STA Gleeok_ObjHeadDirCounterV
+    LDA Gleeok_ObjHeadSpeedY
     EOR #$FF
-    STA $0416
+    STA Gleeok_ObjHeadSpeedY
 L127FA_Exit:
     RTS
 
 Gleeok_DecHeadTimer:
-    DEC DemoLineAttrVramAddrHi
+    DEC Gleeok_ObjHeadDelay
     RTS
 
 ; Params:
@@ -9422,9 +9391,9 @@ Gleeok_DrawBody:
     ; Otherwise, set a longer time ($10).
     ;
     LDA #$10
-    LDY _ActiveRedLeeverCount
+    LDY Gleeok_WrithingCounter
     BEQ :+
-    DEC _ActiveRedLeeverCount
+    DEC Gleeok_WrithingCounter
     LDA #$06
 :
     STA GleeokAnimationTimer
@@ -9528,13 +9497,9 @@ InitZelda:
 :
     ; Look up and set the location of each object.
     ;
-    ; MULTI: A8C0-1
-    ;
-    LDA $A8BF, X
+    LDA GuardFireXs-1, X
     STA ObjX, X
-    ; MULTI: A8C5-1
-    ;
-    LDA GuardFireXs+4, X
+    LDA GuardFireYs-1, X
     STA ObjY, X
     LDA #$3F                    ; Guard fire object type
     STA ObjType, X
@@ -9586,10 +9551,10 @@ InitLamnola:
     ; 1 or 2.
     ;
     LDA ObjType+1
-    STA GleeokBodyAnimationFrame
+    STA Lamnola_Type
     SEC
     SBC #$39
-    STA GleeokAnimationTimer
+    STA Lamnola_Speed
     ; TODO:
     ; Do the heads not count?
     ;
@@ -9613,7 +9578,7 @@ InitPatra:
     ; Set flying speed $1F, and maximum $40.
     ;
     LDA #$1F
-    STA _Multi_041F, X
+    STA Flyer_ObjSpeed, X
     LDA #$40
     STA FlyingMaxSpeedFrac
     ; TODO: set [0601] to $40
@@ -9777,7 +9742,7 @@ UpdateLamnola:
     ; The speed is 1 or 2. By swapping them, you get sprite attributes
     ; to store in [03].
     ;
-    LDA GleeokAnimationTimer
+    LDA Lamnola_Speed
     EOR #$03
     STA $03
     ; If the segment is a head, then use tile $9E, else $A0.
@@ -9823,7 +9788,7 @@ UpdateLamnola:
 @FindTail:
     INY
     LDA ObjType+1, Y
-    CMP GleeokBodyAnimationFrame
+    CMP Lamnola_Type
     BNE @FindTail
     ; Set the timer for the dead dummy object that will replace the tail.
     ;
@@ -10073,7 +10038,7 @@ Lamnola_Move:
     BEQ @Left
     LDA ObjX, X
     CLC
-    ADC GleeokAnimationTimer
+    ADC Lamnola_Speed
     STA ObjX, X
 @Left:
     ; If direction has a left component (2), then subtract offset from X coordinate.
@@ -10083,7 +10048,7 @@ Lamnola_Move:
     BIT $02
     BEQ @Down
     LDA ObjX, X
-    SBC GleeokAnimationTimer
+    SBC Lamnola_Speed
     STA ObjX, X
 @Down:
     ; If direction has a down component (4), then add offset to Y coordinate.
@@ -10093,7 +10058,7 @@ Lamnola_Move:
     BIT $02
     BEQ @Up
     LDA ObjY, X
-    ADC GleeokAnimationTimer
+    ADC Lamnola_Speed
     STA ObjY, X
 @Up:
     ; If direction has an up component (8), then subtract offset from Y coordinate.
@@ -10103,7 +10068,7 @@ Lamnola_Move:
     BIT $02
     BEQ @Exit
     LDA ObjY, X
-    SBC GleeokAnimationTimer
+    SBC Lamnola_Speed
     STA ObjY, X
 @Exit:
     RTS
@@ -10123,8 +10088,8 @@ UpdatePatra:
     ; apply to the children.
     ;
     LDA #$00
-    STA $046B, X
-    STA $0478, X
+    STA Flyer_ObjOffsetX, X
+    STA Flyer_ObjOffsetY, X
     JSR MoveFlyer
     LDA #$02                    ; 2 animation frames a screen frame
     JSR _AnimateAndDrawCommonObject
@@ -10157,11 +10122,11 @@ UpdatePatra:
     ; flip the maneuver index.
     ;
     LDA ObjTimer+1, X
-    ORA ObjGridOffset+3
+    ORA ObjAngleWhole+3
     BNE @Exit
-    LDA $045E, X
+    LDA Patra_ObjManeuverIndex, X
     EOR #$01
-    STA $045E, X
+    STA Patra_ObjManeuverIndex, X
     TYA
     ; TODO:
     ; for this to make sense, Y must be 0 or 1. But where is is set?
@@ -10172,7 +10137,7 @@ UpdatePatra:
     RTS
 
 ControlPatraFlight:
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     JSR TableJump
 ControlPatraFlight_JumpTable:
     .ADDR Flyer_SpeedUp
@@ -10194,9 +10159,9 @@ Flyer_PatraDecideState:
     INY
 :
     TYA
-    STA _Multi_0444, X
+    STA Flyer_ObjFlyingState, X
     LDA #$08
-    STA _Multi_042C, X
+    STA Flyer_ObjTurns, X
     RTS
 
 PatraChildStartAngles:
@@ -10244,7 +10209,7 @@ UpdatePatraChild:
     ; If the patra child in slot 2 has not reached the required angle,
     ; then return.
     ;
-    LDA ObjGridOffset+2
+    LDA ObjAngleWhole+2
     CMP PatraChildStartAngles, Y
     BNE @Exit
 @Ready:
@@ -10265,7 +10230,7 @@ UpdatePatraChild:
     ; Set angle $18 (N).
     ;
     LDA #$18
-    STA ObjGridOffset, X
+    STA ObjAngleWhole, X
     ; This location is right above Patra.
     ; Set X coordinate to Patra's.
     ;
@@ -10296,11 +10261,11 @@ PatraChild_State1:
     ;
     LDA ObjX, X
     CLC
-    ADC $046C
+    ADC Flyer_ObjOffsetX+1
     STA ObjX, X
     LDA ObjY, X
     CLC
-    ADC $0479
+    ADC Flyer_ObjOffsetY+1
     STA ObjY, X
     ; Reset [0B]. The high byte of the amount to subtract is 0.
     ;
@@ -10319,7 +10284,7 @@ PatraChild_State1:
     ; Load Patra's maneuver index.
     ; It determines which counts of bits are looked up below.
     ;
-    LDY $045F
+    LDY Patra_ObjManeuverIndex+1
     ; If the monster is Patra Child 1 ($25), then look up two separate
     ; counts of bits to use for Y and X increment calculations in rotation.
     ; This leads to a large circle (6,6) and a wobbling ring (5,6).
@@ -10369,7 +10334,7 @@ PatraChild_Draw:
     JMP DrawObjectNotMirrored
 
 UpdateGanon:
-    LDA $0445
+    LDA Ganon_ScenePhase
     JSR TableJump
 UpdateGanon_JumpTable:
     .ADDR Ganon_ScenePhase0
@@ -10424,7 +10389,7 @@ Ganon_ScenePhase0:
     STA ObjTimer
     ; Set scene phase 1, and go draw Ganon.
     ;
-    INC $0445
+    INC Ganon_ScenePhase
     BNE Ganon_DrawBodyFrame0
 :
     ; TODO: Find out the sample. Add it to comment below, and to label.
@@ -10460,13 +10425,13 @@ Ganon_ScenePhase1:
     STA ItemTypeToLift
     LDA #$20
     STA SongRequest
-    INC $0445
+    INC Ganon_ScenePhase
 Ganon_DrawBodyFrame0:
     ; When holding the Triforce of Courage, only draw Ganon
     ; with animation frame 0.
     ;
     LDA #$00
-    STA $046B, X
+    STA Ganon_ObjAnimationFrame, X
     JMP Ganon_DrawBody
 
 Ganon_ScenePhase2:
@@ -10475,7 +10440,7 @@ Ganon_ScenePhase2:
     ;
     ; If Ganon is dying, go handle it.
     ;
-    LDA _Multi_042C, X
+    LDA Ganon_ObjPhase, X
     BNE Ganon_Dying
     JSR Ganon_CheckCollisions
     JSR PlayBossHitCryIfNeeded
@@ -10514,21 +10479,19 @@ Ganon_MoveAndShoot:
     ; Change the animation frame every screen frame; so that
     ; when Ganon is hit, he appears in a random pose.
     ;
-    INC $046B, X
+    INC Ganon_ObjAnimationFrame, X
     ; The animation cycle has 6 frames.
     ;
-    LDA $046B, X
+    LDA Ganon_ObjAnimationFrame, X
     CMP #$06
     BNE @Move
     LDA #$00
-    STA $046B, X
+    STA Ganon_ObjAnimationFrame, X
 @Move:
     ; Move like a blue wizzrobe teleporting.
     ;
-    ; MULTI: [0394][X]
-    ;
     LDA #$01
-    STA ObjGridOffset, X
+    STA ObjRemDistance, X
     JSR BlueWizzrobe_TurnSometimesAndMoveAndCheckTile
     ; Shoot every $40 frames.
     ;
@@ -10577,13 +10540,13 @@ Ganon_Dying:
     ; Ganon is dying.
     ; Increment Ganon phase every frame.
     ;
-    INC _Multi_042C, X
+    INC Ganon_ObjPhase, X
     ; If it just went from $FF to 0, then keep it at $FF.
     ;
-    LDA _Multi_042C, X
+    LDA Ganon_ObjPhase, X
     BNE :+
     LDA #$FF
-    STA _Multi_042C, X
+    STA Ganon_ObjPhase, X
 :
     ; If Ganon phase < $50, then go draw only.
     ;
@@ -10612,7 +10575,7 @@ Ganon_Dying:
     JSR Ganon_DrawAshes
     ; Keep drawing the burst artifacts while Ganon phase < $A0.
     ;
-    LDA _Multi_042C, X
+    LDA Ganon_ObjPhase, X
     CMP #$A0
     BCC Ganon_DrawBurst
     ; If > $A0, then there's nothing left to do, except return.
@@ -10683,7 +10646,7 @@ Ganon_DrawCloud:
     ; Else use frame image $D (low).
     ;
     LDA #$0C
-    LDY $0478, X
+    LDY Ganon_ObjCloudDist, X
     CPY #$06
     BCS :+
     LDA #$0D                    ; Low density cloud frame image (tile $74)
@@ -10702,12 +10665,12 @@ Ganon_DrawCloud:
 Ganon_DrawBurst:
     ; If cloud distance <> 0, then decrement it once every 8 frames.
     ;
-    LDA $0478, X
+    LDA Ganon_ObjCloudDist, X
     BEQ @DrawClouds
     LDA FrameCounter
     AND #$07
     BNE @DrawClouds
-    DEC $0478, X
+    DEC Ganon_ObjCloudDist, X
 @DrawClouds:
     ; Draw the four clouds at diagonal corners.
     ;
@@ -10792,7 +10755,7 @@ Ganon_DrawBurst:
 Ganon_GetCurCloudLeft:
     LDA ObjX, X
     SEC
-    SBC $0478, X
+    SBC Ganon_ObjCloudDist, X
     STA $00
     RTS
 
@@ -10802,7 +10765,7 @@ Ganon_GetCurCloudLeft:
 Ganon_GetCurCloudRight:
     LDA ObjX, X
     CLC
-    ADC $0478, X
+    ADC Ganon_ObjCloudDist, X
     STA $00
     RTS
 
@@ -10812,7 +10775,7 @@ Ganon_GetCurCloudRight:
 Ganon_GetCurCloudTop:
     LDA ObjY, X
     SEC
-    SBC $0478, X
+    SBC Ganon_ObjCloudDist, X
     STA $01
     RTS
 
@@ -10822,7 +10785,7 @@ Ganon_GetCurCloudTop:
 Ganon_GetCurCloudBottom:
     LDA ObjY, X
     CLC
-    ADC $0478, X
+    ADC Ganon_ObjCloudDist, X
     STA $01
     RTS
 
@@ -10870,7 +10833,7 @@ Ganon_DrawBody:
     ; Multiply the animation frame by 4, because of the 4 parts
     ; that make it up.
     ;
-    LDA $046B, X
+    LDA Ganon_ObjAnimationFrame, X
     ASL
     ASL
     ; Add [07] -- the index of the current part.
@@ -10990,7 +10953,7 @@ Ganon_CheckCollisions:
     BEQ @Exit
     ; Set the Ganon phase to "dying".
     ;
-    INC _Multi_042C, X
+    INC Ganon_ObjPhase, X
     ; Now his body does flash.
     ;
     LDA #$28
@@ -10998,7 +10961,7 @@ Ganon_CheckCollisions:
     ; Set initial cloud distance 8.
     ;
     LDA #$08
-    STA $0478, X
+    STA Ganon_ObjCloudDist, X
     RTS
 
 GanonColorTransferRecord:
@@ -11165,7 +11128,7 @@ SetUpDroppedItem:
     ; Compare dead object's type to array of 7 that don't drop items.
     ; If found, go destroy the monster.
     ;
-    LDA _Multi_0412, X
+    LDA Item_ObjMonsterType, X
     LDY #$06
 @FindNoDropType:
     CMP NoDropMonsterTypes, Y
@@ -11271,11 +11234,11 @@ SetUpDroppedItem:
     ; Set ObjItemLifetime to $FF.
     ;
     LDA #$FF
-    STA _ObjPosFrac, X
+    STA Item_ObjItemLifetime, X
     ; Set ObjItemId.
     ;
     LDA $00
-    STA ObjState, X
+    STA Item_ObjItemId, X
     ; If the item is a fairy, we have to finish setting it up.
     ;
     CMP #$23
@@ -11297,20 +11260,15 @@ UpdateItem:
     LDA FrameCounter
     LSR
     BCC :+
-    DEC _ObjPosFrac, X          ; MULTI: ObjItemLifetime
+    DEC Item_ObjItemLifetime, X
 :
     ; If lifetime reached 0, go destroy the object.
     ;
-    ;
-    ; MULTI: ObjItemLifetime
-    LDA _ObjPosFrac, X
+    LDA Item_ObjItemLifetime, X
     BEQ DestroyMonster_Bank4
     ; Draw the item. Fairies are animated separately.
     ;
-    ;
-    ; MULTI: ObjState/ObjItemType
-    ;
-    LDA ObjState, X
+    LDA Item_ObjItemId, X
     CMP #$23
     BEQ @AnimateFairy
     JSR AnimateItemObject
@@ -11362,7 +11320,7 @@ UpdateItem:
     ; Try to take the item.
     ;
     LDX CurObjIndex
-    LDA ObjState, X             ; MULTI: ObjItemType
+    LDA Item_ObjItemId, X
     STA $04
     JSR TryTakeItem
 @SkipTaking:
@@ -11376,9 +11334,7 @@ UpdateItem:
     ; If item object's item type is invalid, then the item was taken.
     ; So, go destroy this object.
     ;
-    ;
-    ; MULTI: ObjItemType
-    LDA ObjState, X
+    LDA Item_ObjItemId, X
     CMP #$FF
     BEQ DestroyMonster_Bank4
     DEC $0D                     ; Decrease the index [0D].
@@ -11417,7 +11373,7 @@ _ShootIfWanted:
     STA $00
     ; If the monster does not want to shoot, then return C=0.
     ;
-    LDA _Multi_0412, X
+    LDA ObjWantsToShoot, X
     BEQ ReturnDidNotShoot
 ; Params:
 ; [00]: shot object type
@@ -11548,7 +11504,7 @@ SetUpFairyObject:
     ; Set flying speed fraction to $7F.
     ;
     LDA #$7F
-    STA _Multi_041F, X
+    STA Flyer_ObjSpeed, X
     ; Set maximum speed fraction to $A0.
     ;
     LDA #$A0
@@ -11557,12 +11513,10 @@ SetUpFairyObject:
 
 ResetFlyerState:
     LDA #$00
-    ; TODO: Names
-    ;
-    STA _Multi_0412, X
-    STA _Multi_042C, X
-    STA _Multi_0437, X
-    STA _Multi_0444, X
+    STA Flyer_ObjSpeedFrac, X
+    STA Flyer_ObjTurns, X
+    STA Flyer_ObjDistTraveled, X
+    STA Flyer_ObjFlyingState, X
     STA ObjInvincibilityTimer, X
     RTS
 
@@ -11586,7 +11540,7 @@ _DrawFairy:
     JMP Anim_WriteItemSprites
 
 ControlFairyFlight:
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     JSR TableJump
 ControlFairyFlight_JumpTable:
     .ADDR Flyer_SpeedUp
@@ -11598,9 +11552,9 @@ Flyer_FairyDecideState:
     ; Set up 6 turns, and go to state 3.
     ;
     LDA #$03
-    STA _Multi_0444, X
+    STA Flyer_ObjFlyingState, X
     LDA #$06
-    STA _Multi_042C, X
+    STA Flyer_ObjTurns, X
 Flyer_DoNothing:
     RTS
 
@@ -11613,7 +11567,7 @@ Flyer_Delay:
     LDA ObjTimer, X
     BNE :+
     LDA #$00
-    STA _Multi_0444, X
+    STA Flyer_ObjFlyingState, X
 :
     RTS
 
@@ -11621,21 +11575,19 @@ Flyer_SlowDown:
     ; Decrease speed each frame.
     ; When it goes below a threshold ($20), go to flying state 5.
     ;
-    DEC _Multi_041F, X
+    DEC Flyer_ObjSpeed, X
     JMP :+
 
 Flyer_SpeedUp:
-    ; TODO:
     ; Increase speed each frame.
-    ; When it reaches a threshold [04D1], go to flying state 1.
+    ; When it reaches a threshold, go to flying state 1.
     ;
-    INC _Multi_041F, X
+    INC Flyer_ObjSpeed, X
 :
-    LDA _Multi_041F, X
+    LDA Flyer_ObjSpeed, X
     AND #$E0
     BNE Flyer_CompareMaxSpeed
-    ; TODO:
-    ; ([041F][X] & $E0) = 0
+    ; (whole_speed & $E0) = 0
     ; Set a random timer between $40 and $7F.
     ;
     LDA Random, X
@@ -11646,24 +11598,24 @@ Flyer_SpeedUp:
     ;
     LDA #$05
 Flyer_SetFlyingState:
-    STA _Multi_0444, X
+    STA Flyer_ObjFlyingState, X
 :
     RTS
 
 Flyer_CompareMaxSpeed:
     CMP FlyingMaxSpeedFrac
-    BCC :-                      ; TODO: If ([041F][X] & $E0) < [04D1], return.
+    BCC :-                      ; If (whole_speed & $E0) < threshold, return.
     LDA #$01                    ; Else go to flying state 1, and return.
     JMP Flyer_SetFlyingState
 
 MoveFlyer:
     ; Add (flying speed AND $E0) to flying position fraction.
     ;
-    LDA _Multi_041F, X
+    LDA Flyer_ObjSpeed, X
     AND #$E0
     CLC
-    ADC _Multi_0412, X
-    STA _Multi_0412, X
+    ADC Flyer_ObjSpeedFrac, X
+    STA Flyer_ObjSpeedFrac, X
     BCC @Exit                   ; If the fraction isn't whole yet, then return.
     ; Because this object can move in 8 directions,
     ; test the object's direction with each cardinal direction,
@@ -11677,7 +11629,7 @@ MoveFlyer:
     BIT $02
     BEQ @Left                   ; Right is not a component? Go check next direction.
     INC ObjX, X
-    INC $046B, X                ; TODO: [046B]
+    INC Flyer_ObjOffsetX, X
 @Left:
     ; Test left.
     ;
@@ -11685,7 +11637,7 @@ MoveFlyer:
     BIT $02
     BEQ @Down                   ; Left is not a component? Go check next direction.
     DEC ObjX, X
-    DEC $046B, X                ; TODO: [046B]
+    DEC Flyer_ObjOffsetX, X
 @Down:
     ; Test down.
     ;
@@ -11693,7 +11645,7 @@ MoveFlyer:
     BIT $02
     BEQ @Up                     ; Down is not a component? Go check next direction.
     INC ObjY, X
-    INC $0478, X                ; TODO: [0478]
+    INC Flyer_ObjOffsetY, X
 @Up:
     ; Test up.
     ;
@@ -11701,12 +11653,12 @@ MoveFlyer:
     BIT $02
     BEQ @End                    ; Up is not a component? Go finish up.
     DEC ObjY, X
-    DEC $0478, X                ; TODO: [0478]
+    DEC Flyer_ObjOffsetY, X
 @End:
     ; Increase the distance traveled; and keep the object within
     ; the bounds of the room.
     ;
-    INC _Multi_0437, X
+    INC Flyer_ObjDistTraveled, X
     JSR _BoundFlyer
 @Exit:
     RTS
@@ -11762,7 +11714,7 @@ DeferBounce:
     BNE L13307_Exit
 :
     LDA Directions8, Y
-    STA _ObjQSpeedFrac, X
+    STA Moldorm_ObjBounceDir, X
 L13307_Exit:
     RTS
 
@@ -11779,7 +11731,7 @@ Flyer_Chase:
     ; Decrease the turn counter.
     ; Once there are no more turns, go to flying state 1.
     ;
-    DEC _Multi_042C, X
+    DEC Flyer_ObjTurns, X
     BNE SetDelayAndTurn
 SetFlyingState1:
     LDA #$01
@@ -11916,7 +11868,7 @@ Flyer_Wander:
     ; Decrease the turn counter.
     ; Once there are no more turns, go to flying state 1.
     ;
-    DEC _Multi_042C, X
+    DEC Flyer_ObjTurns, X
     BNE :+
     JMP SetFlyingState1
 
@@ -11971,6 +11923,7 @@ PatraSines:
 ; Params:
 ; A: high bits of cosine to use in calculating Y increment
 ; Y: high bits of sine to use in calculating X increment
+; X: object index
 ;
 ; Returns:
 ; A: new Y coordinate of object
@@ -11983,7 +11936,7 @@ RotateObjectLocation:
     ;
     ; Look up the sine for the current angle, and store it in [00].
     ;
-    LDA ObjGridOffset, X
+    LDA ObjAngleWhole, X
     AND #$0F
     TAY
     LDA PatraSines, Y
@@ -11999,7 +11952,7 @@ RotateObjectLocation:
     ;
     ; If angle >= $10, then the monster is in the top half of circle going left.
     ;
-    LDA ObjGridOffset, X
+    LDA ObjAngleWhole, X
     AND #$18                    ; TODO: Why AND with $18?
     CMP #$10
     BCC @AddToX
@@ -12034,7 +11987,7 @@ RotateObjectLocation:
     ; Look up the cosine for the current angle, and store it in [00].
     ; The cosine corresponds to the sine offset by a quarter circle (8).
     ;
-    LDA ObjGridOffset, X
+    LDA ObjAngleWhole, X
     CLC
     ADC #$08
     AND #$0F
@@ -12050,7 +12003,7 @@ RotateObjectLocation:
     ;
     ; If (angle - 8) >= $10, then the monster is in the right half of circle going up.
     ;
-    LDA ObjGridOffset, X
+    LDA ObjAngleWhole, X
     SEC
     SBC #$08
     AND #$18
@@ -12122,18 +12075,18 @@ ShiftMultiply:
 ;
 DecreaseObjectAngle:
     STA $0A
-    LDA _ObjMovingLimit, X
+    LDA ObjAngleFrac, X
     SEC
     SBC $0A
-    STA _ObjMovingLimit, X
+    STA ObjAngleFrac, X
     ; Subtract the high amount byte from high angle byte with borrow.
     ;
-    LDA ObjGridOffset, X
+    LDA ObjAngleWhole, X
     SBC $0B
     ; Cap the high byte at $1F.
     ;
     AND #$1F
-    STA ObjGridOffset, X
+    STA ObjAngleWhole, X
     RTS
 
 

@@ -1,4 +1,5 @@
 .INCLUDE "Variables.inc"
+.INCLUDE "CommonVars.inc"
 .INCLUDE "ObjVars.inc"
 
 .SEGMENT "BANK_04_00"
@@ -80,7 +81,7 @@
 .IMPORT ResetObjState
 .IMPORT ResetShoveInfo
 .IMPORT ReverseObjDir
-.IMPORT SetShoveInfoPass0
+.IMPORT SetShoveInfoWith0
 .IMPORT SetTypeAndClearObject
 .IMPORT TableJump
 .IMPORT UpdateArrowOrBoomerang
@@ -8564,7 +8565,7 @@ UpdateGleeokHead:
     ; because this monster can't get hurt nor die.
     ;
     JSR ResetObjMetastate
-    JSR SetShoveInfoPass0
+    JSR SetShoveInfoWith0
     STA ObjInvincibilityTimer, X
     RTS
 
@@ -11348,7 +11349,7 @@ UpdateItem:
 DestroyMonster_Bank4:
     LDA #$00
     STA ObjType, X
-    JSR SetShoveInfoPass0
+    JSR SetShoveInfoWith0
     STA ObjTimer, X
     STA ObjState, X
     STA ObjInvincibilityTimer, X

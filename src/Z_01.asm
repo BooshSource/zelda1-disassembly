@@ -1,4 +1,5 @@
 .INCLUDE "Variables.inc"
+.INCLUDE "CommonVars.inc"
 .INCLUDE "CaveVars.inc"
 
 .SEGMENT "BANK_01_00"
@@ -2698,7 +2699,7 @@ CommonCodeBlock_Bank1:
 .IMPORT ResetMovingDir
 .IMPORT RunCrossRoomTasksAndBeginUpdateMode_PlayModesNoCellar
 .IMPORT SaveSlotToPaletteRowOffset
-.IMPORT SetShoveInfoPass0
+.IMPORT SetShoveInfoWith0
 .IMPORT UpdateDeadDummy
 
 .EXPORT _CalcDiagonalSpeedIndex
@@ -4350,7 +4351,7 @@ TryTakeRoomItem:
     ; Pass RoomItemId, also known as [98][$13] and ObjDir[$13],
     ; to try to take the item.
     ;
-    LDA ObjDir, X
+    LDA ObjRoomItemId, X
     STA $04                     ; [04] holds the item type.
 ; Params:
 ; X: object index
@@ -4360,9 +4361,9 @@ TryTakeRoomItem:
 ; If the lifetime timer of the item >= $F0, then return;
 ; so that the player can't pick it up right away.
 ;
-; MULTI: ObjPosFrac [03A8][X] is used to count down the life of the item.
+; [03A8][X] is used to count down the life of the item.
 TryTakeItem:
-    LDA _ObjPosFrac, X
+    LDA Item_ObjItemLifetime, X
     CMP #$F0
     BCS L6C28_Exit
     ; If Y distance between Link and the item >= 9, return.
@@ -5460,7 +5461,7 @@ CheckMonsterCollisions:
 :
     LDA ObjState, X
     BPL @Exit
-    LDY _Multi_042C, X          ; Get the object slot of this goriya's boomerang.
+    LDY ObjRefId, X             ; Get the object slot of this goriya's boomerang.
     LDA #$00
     STA ObjType, Y
 @Exit:
@@ -5478,7 +5479,7 @@ CheckMonsterCollisions:
 :
     LDA $0C
     BEQ @Exit2
-    INC _Multi_042C, X
+    INC ObjCaptureTimer, X
 @Exit2:
     RTS
 
@@ -5977,7 +5978,7 @@ HandleMonsterDied:
 ; A: 0
 ;
 ResetShoveInfoAndInvincibilityTimer:
-    JSR SetShoveInfoPass0
+    JSR SetShoveInfoWith0
     STA ObjInvincibilityTimer, X
     RTS
 

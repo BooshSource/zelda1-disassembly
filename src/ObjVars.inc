@@ -4,9 +4,6 @@ ObjTurnTimer := $478
 
 ObjRemDistance := $394
 
-ObjRefId := $42C
-ObjCaptureTimer := $42C
-
 ObjPushTimer := $412
 
 ObjAngleFrac := $380
@@ -99,10 +96,6 @@ Ganon_ScenePhase := $445
 Ganon_ObjAnimationFrame := $46B
 Ganon_ObjPhase := $42C
 Ganon_ObjCloudDist := $478
-
-Item_ObjMonsterType := $412
-Item_ObjItemLifetime := $3A8
-Item_ObjItemId := $AC
 
 Gleeok_NeckXs0 := $438
 Gleeok_NeckXs1 := $452

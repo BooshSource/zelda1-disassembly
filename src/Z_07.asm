@@ -315,7 +315,7 @@
 .EXPORT RunCrossRoomTasksAndBeginUpdateMode_EnterPlayModes
 .EXPORT RunCrossRoomTasksAndBeginUpdateMode_PlayModesNoCellar
 .EXPORT SaveSlotToPaletteRowOffset
-.EXPORT SetShoveInfoPass0
+.EXPORT SetShoveInfoWith0
 .EXPORT SetTypeAndClearObject
 .EXPORT SetUpAndDrawLinkLiftingItem
 .EXPORT TableJump
@@ -2345,7 +2345,7 @@ ResetShoveInfo:
 ; Returns:
 ; A: 0
 ;
-SetShoveInfoPass0:
+SetShoveInfoWith0:
     STA ObjShoveDir, X
     STA ObjShoveDistance, X
     RTS

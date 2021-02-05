@@ -7869,7 +7869,7 @@ UpdateManhandla:
     LDA Manhandla_ObjSpeedFrac+1, Y
     CLC
     ADC #$80
-    STA _TitleWaveYs, Y
+    STA Manhandla_ObjSpeedFrac+1, Y
     ; Carry to the high speed byte of this segment.
     ;
     LDA Manhandla_ObjSpeedWhole+1, Y

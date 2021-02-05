@@ -1,4 +1,5 @@
 .INCLUDE "Variables.inc"
+.INCLUDE "CaveVars.inc"
 
 .SEGMENT "BANK_01_00"
 
@@ -122,7 +123,7 @@ InitCaveContinue:
     LDA OverworldPersonTextSelectors, Y
     PHA                         ; Save the text selector byte before masking.
     AND #$3F
-    STA _ScrolledScreenCount
+    STA PersonTextSelector
     ; Pop and mask the text selector byte with $C0 to get the
     ; "pay" and "pick up" cave flags and store them in [03].
     ;
@@ -147,7 +148,7 @@ InitCaveContinue:
     ; Item ID's are in the low 6 bits, cave flags are in the high 2 bits.
     ;
     LDA LevelBlockAttrsE, Y
-    STA _TitleWaveYs+2, X
+    STA CaveItemIds, X
     ; Copy the cave flags (high 2 bits) of the three items to [00] to [02].
     ;
     AND #$C0
@@ -155,7 +156,7 @@ InitCaveContinue:
     ; Copy 3 prices from the Cave level block info.
     ;
     LDA LevelBlockAttrsE+60, Y
-    STA $0430, X
+    STA CavePrices, X
     ; Bottom of the wares copying loop.
     ;
     INY
@@ -181,15 +182,14 @@ InitCaveContinue:
     LSR
     ORA $00
     STA $00
-    ; TODO:
     ; Get the top 2 bits of item descriptor 1, shift them right twice,
-    ; and combine them with [00] into [0413].
+    ; and combine them with [00] into CaveFlags.
     ;
     LDA $01
     LSR
     LSR
     ORA $00
-    STA _TriforceGlowCycle
+    STA CaveFlags
     ; The end result is a byte with 8 cave flags.
     ;
     ; If cave flag "money game" is missing, then go finish up,
@@ -248,7 +248,6 @@ InitCaveContinue:
     LDY #$32
 :
     STY $0471
-    ; TODO:
     ; The 3 amounts are now in [046F] to [0471].
     ; Reference these amounts using the permutation of indexes
     ; in [046C] to [046E]; and copy them to [0448] to [044A].
@@ -257,18 +256,18 @@ InitCaveContinue:
 @ArrangeAmounts:
     LDY $046C, X
     LDA $046F, Y
-    STA $0448, X
+    STA MoneyGameAmounts, X
     DEX
     BPL @ArrangeAmounts
 @ResetTextbox:
     ; Reset the current character index.
     ;
     LDA #$00
-    STA $0416
+    STA PersonTextIndex
     ; Point to the front of the first textbox line.
     ;
     LDA TextboxLineAddrsLo+2
-    STA $045F
+    STA PersonTextPtr
     RTS
 
 ; Params:
@@ -398,12 +397,10 @@ DrawCaveItems:
     ; If the cave flags do not call for showing items, then
     ; go see about showing prices.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$04                    ; Cave flag: Show items
     BEQ @ShowPriceRupee
-    ; Loop over the wares to draw, from 2 to 0.
-    ;
-    ; MULTI: [0421]
+    ; Loop over the wares to draw, from 2 to 0, indexed by [0421].
     ;
     LDA #$02
     STA _TitleWaveYs+1
@@ -419,9 +416,7 @@ DrawCaveItems:
     STA ObjY+19
     ; If the item is nothing ($3F), then loop gain.
     ;
-    ; MULTI: [0422][X]
-    ;
-    LDA _TitleWaveYs+2, X
+    LDA CaveItemIds, X
     AND #$3F
     CMP #$3F
     BEQ @NextWare
@@ -437,7 +432,7 @@ DrawCaveItems:
 @ShowPriceRupee:
     ; If the cave flags do not call for showing prices, then return.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$08                    ; Cave flag: Show prices
     BEQ @Exit
     ; Show a rupee at ($30, $AB).
@@ -456,7 +451,7 @@ UpdateCavePersonState_TransferPrices:
     ; If the cave flags do not call for showing prices, then
     ; advance the state and return.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$08                    ; Cave flag: Show prices
     BEQ IncCaveState
 WritePricesTransferBuf:
@@ -471,12 +466,12 @@ WritePricesToDynamicTransferBuf:
     ; and offset of price string.
     ;
     LDX #$00
-    STX _DemoLineTextIndex
-    STX _DemoItemRow
+    STX CaveCurPriceIndex
+    STX CaveCurPriceOffset
 @LoopPrice:
     ; Get the price of the current item.
     ;
-    LDA $0430, X
+    LDA CavePrices, X
     ; If it's 0, then store a space character in the text field [01], [02], [03].
     ;
     BNE @Format
@@ -492,7 +487,7 @@ WritePricesToDynamicTransferBuf:
     ; store a dash in prefix byte [04]. Else store a space ($24).
     ;
     LDX #$24
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     ASL
     BCC @Align
     LDX #$62                    ; "-"
@@ -500,7 +495,7 @@ WritePricesToDynamicTransferBuf:
     STX $04
     ; Move the dash closer to the number.
     ;
-    LDY _DemoItemRow
+    LDY CaveCurPriceOffset
     LDA $02
     JSR SwapSpaceAndSign
     STA DynTileBuf+6, Y
@@ -511,14 +506,14 @@ WritePricesToDynamicTransferBuf:
     STA DynTileBuf+7, Y
     ; Add 4 to the base offset for the next string.
     ;
-    LDA _DemoItemRow
+    LDA CaveCurPriceOffset
     CLC
     ADC #$04
-    STA _DemoItemRow
+    STA CaveCurPriceOffset
     ; Bottom of the price loop. Increment the index of the item until = 3.
     ;
-    INC _DemoLineTextIndex
-    LDX _DemoLineTextIndex
+    INC CaveCurPriceIndex
+    LDX CaveCurPriceIndex
     CPX #$03
     BNE @LoopPrice
     ; Delay $A frames at the beginning of the next state.
@@ -599,15 +594,15 @@ UpdatePersonState_Textbox:
     ; Replace the low byte of the VRAM address with the one
     ; where the next character should be written.
     ;
-    LDA $045F
+    LDA PersonTextPtr
     STA DynTileBuf+1
     ; Increment the low VRAM address for the next character.
     ;
-    INC $045F
+    INC PersonTextPtr
     ; Use the person text selector to look up the address of the
     ; text for the textbox. Store the address in [00:01].
     ;
-    LDY _ScrolledScreenCount
+    LDY PersonTextSelector
     LDA PersonTextAddrs, Y
     STA $00
     INY
@@ -615,11 +610,11 @@ UpdatePersonState_Textbox:
     STA $01
     ; Load the person text current character index.
     ;
-    LDY $0416
+    LDY PersonTextIndex
     ; Increment the index variable to point to the next character
     ; for next time.
     ;
-    INC $0416
+    INC PersonTextIndex
     ; Get the current character.
     ;
     LDA ($00), Y
@@ -664,7 +659,7 @@ UpdatePersonState_Textbox:
     ; Look up the low VRAM address and store it.
     ;
     LDA TextboxLineAddrsLo, Y
-    STA $045F
+    STA PersonTextPtr
     ; If index = 2, then we've reached the end of the text,
     ; and low VRAM address is moved to the front of the first line.
     ; So, advance the state of the person object, and unhalt Link.
@@ -680,7 +675,7 @@ UpdateCavePersonState_TalkOrShopOrDoorCharge:
     ; If the cave flags call for choosing an item, then
     ; go handle those kinds of caves.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     LSR                         ; Cave flag: Choose/Pick up (1)
     BCS @CheckPickUp
     ; Advance to the end state, where the person is still shown.
@@ -722,9 +717,7 @@ UpdateCavePersonState_TalkOrShopOrDoorCharge:
 @LoopWare:
     ; If this item is nothing, then loop again.
     ;
-    ; MULTI: [0422][X]
-    ;
-    LDA _TitleWaveYs+2, X
+    LDA CaveItemIds, X
     AND #$3F                    ; Mask off the cave flags.
     CMP #$3F                    ; No item
     BEQ @NextWare
@@ -752,11 +745,11 @@ UpdateCavePersonState_TalkOrShopOrDoorCharge:
 @PickedUp:
     ; Store the index of the item chosen.
     ;
-    STX _DemoPhase0Subphase1Timer
+    STX CaveChosenIndex
     ; If hint and money game cave flags are missing, then
     ; go take an item given away, or buy it.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$30                    ; Cave flags: Hint and Money game
     BEQ @PickedUpWare
     ; If have cave flag "money game", then go to state 5 and return.
@@ -768,11 +761,11 @@ UpdateCavePersonState_TalkOrShopOrDoorCharge:
     ; If rupees < price, then return.
     ;
     LDA InvRupees
-    CMP $0430, X
+    CMP CavePrices, X
     BCC Exit
     ; Pass the price to pay for the hint.
     ;
-    LDA $0430, X
+    LDA CavePrices, X
     JSR PostDebit
 @MadeWager:
     ; Go to state 5. It runs the hint cave and money game.
@@ -786,23 +779,23 @@ UpdateCavePersonState_TalkOrShopOrDoorCharge:
     ;
     ; If "pay" cave flag is missing, then go try to take the item.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$02
     BEQ @TryToTake
     ; If rupees < price, then return.
     ;
     LDA InvRupees
-    CMP $0430, X
+    CMP CavePrices, X
     BCC Exit
     ; Pass the price to pay for the item.
     ;
-    LDA $0430, X
+    LDA CavePrices, X
     JSR PostDebit
 @TryToTake:
     ; If "heart requirement" cave flag is missing, then
     ; go to take the item without further ado.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$40
     BEQ @Take
     ; Check heart container requirements.
@@ -827,15 +820,13 @@ UpdateCavePersonState_TalkOrShopOrDoorCharge:
 
 @Take:
     JSR SetRoomFlagUWItemState
-    ; MULTI: [0422][X]
-    ;
-    LDA _TitleWaveYs+2, X
+    LDA CaveItemIds, X
     AND #$3F                    ; Mask off the cave flags.
     PHA                         ; Push the item ID
     ; Flag the item taken by setting its ID to $FF.
     ;
     LDA #$FF
-    STA _TitleWaveYs+2, X
+    STA CaveItemIds, X
     PLA                         ; Pop the item ID
     JSR TakeItem
     LDA #$1E                    ; Blank textbox lines
@@ -847,9 +838,9 @@ UpdateCavePersonState_TalkOrShopOrDoorCharge:
 ClearPricesCaveFlag:
     ; Remove the "show prices" cave flag to get rid of the generic rupee.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$F7
-    STA _TriforceGlowCycle
+    STA CaveFlags
 Exit:
     RTS
 
@@ -869,7 +860,7 @@ HintCaveTextSelectors1:
 UpdateCavePersonState_HintOrMoneyGame:
     ; If "hint" cave flag is missing, then go handle the money game.
     ;
-    LDA _TriforceGlowCycle
+    LDA CaveFlags
     AND #$10
     BEQ @HandleMoneyGameOrGiveaway
     ; If cave type = $75, then use 0 for base offset of
@@ -885,20 +876,20 @@ UpdateCavePersonState_HintOrMoneyGame:
     ; Add the base offset and the index of the item chosen
     ; to get the index of a text selector.
     ;
-    ADC _DemoPhase0Subphase1Timer
+    ADC CaveChosenIndex
     TAY
     ; Look up text selector by the index calculated above.
     ;
     LDA HintCaveTextSelectors0, Y
-    STA _ScrolledScreenCount
+    STA PersonTextSelector
     ; Point to the front of the first line of the textbox.
     ;
     LDA TextboxLineAddrsLo+2
-    STA $045F
+    STA PersonTextPtr
     ; Reset the character index.
     ;
     LDA #$00
-    STA $0416
+    STA PersonTextIndex
     JSR ClearPricesCaveFlag
     LDA #$1E                    ; Blank textbox lines
     JMP CueTransferBufAndAdvanceState
@@ -926,7 +917,7 @@ UpdateCavePersonState_HintOrMoneyGame:
     STA ObjState+1
     ; Post the middle amount in [0431] to add.
     ;
-    LDA $0431
+    LDA CavePrices+1
     JMP PostCredit
 
 @HandleMoneyGame:
@@ -939,13 +930,12 @@ UpdateCavePersonState_HintOrMoneyGame:
     BCC L493A_Exit
     LDA #$08                    ; "key taken" sound effect
     STA Tune0Request
-    ; TODO:
-    ; Copy amounts in [0448][Y] for money game to [0430][Y].
+    ; Copy amounts in [0448][Y] for money game to prices [0430][Y].
     ;
     LDY #$02
 :
-    LDA $0448, Y
-    STA $0430, Y
+    LDA MoneyGameAmounts, Y
+    STA CavePrices, Y
     DEY
     BPL :-
     JSR WritePricesTransferBuf
@@ -956,19 +946,19 @@ UpdateCavePersonState_HintOrMoneyGame:
     ; Prepend the sign to each money game amount.
     ;
     LDY #$01
-    LDA $0448
+    LDA MoneyGameAmounts+0
     JSR PrependSignToPrice
     LDY #$05
-    LDA $0449
+    LDA MoneyGameAmounts+1
     JSR PrependSignToPrice
     LDY #$09
-    LDA $044A
+    LDA MoneyGameAmounts+2
     JSR PrependSignToPrice
     ; If the amount chosen = 20 or 50, then add it;
     ; else subtract it.
     ;
-    LDX _DemoPhase0Subphase1Timer
-    LDA $0448, X
+    LDX CaveChosenIndex
+    LDA MoneyGameAmounts, X
     CMP #$14
     BEQ PostCredit
     CMP #$32
@@ -1020,7 +1010,7 @@ InitUnderworldPerson_Full:
     ; Point to the front of the first line in VRAM.
     ;
     LDA TextboxLineAddrsLo+2
-    STA $045F
+    STA PersonTextPtr
     LDA CurLevel
     JSR TableJump
 InitUnderworldPerson_Full_JumpTable:
@@ -1053,7 +1043,7 @@ InitUnderworldPersonA:
     ; Look up and store the text selector.
     ;
     LDA UnderworldPersonTextSelectorsA, Y
-    STA _ScrolledScreenCount
+    STA PersonTextSelector
     ; If this is the man that offers more bomb capacity, then
     ; go see if the offer was flagged as already taken.
     ;
@@ -1070,11 +1060,11 @@ InitUnderworldPersonLifeOrMoney_Full:
     ; Set text selector for "life or money".
     ;
     LDA #$36
-    STA _ScrolledScreenCount
+    STA PersonTextSelector
     ; Point to the front of the first line in VRAM.
     ;
     LDA TextboxLineAddrsLo+2
-    STA $045F
+    STA PersonTextPtr
 UnderworldPerson_DestroyIfTaken:
     ; Destroy this object if the secret/item was already taken.
     ;
@@ -1105,7 +1095,7 @@ InitUnderworldPersonB:
     ; Look up and store the text selector.
     ;
     LDA UnderworldPersonTextSelectorsB, Y
-    STA _ScrolledScreenCount
+    STA PersonTextSelector
     JMP PlayCharacterSfx
 
 UnderworldPersonTextSelectorsC:
@@ -1128,7 +1118,7 @@ InitUnderworldPersonC:
     ; Look up and store the text selector.
     ;
     LDA UnderworldPersonTextSelectorsC, Y
-    STA _ScrolledScreenCount
+    STA PersonTextSelector
     PLA                         ; Restore the object type.
     ; Return, if this is not the man at the entrance of Level 9,
     ; or Link has not gotten all the triforce pieces.
@@ -1157,12 +1147,12 @@ InitGrumble_Full:
     ; Store text selector $24.
     ;
     LDA #$24
-    STA _ScrolledScreenCount
+    STA PersonTextSelector
     ; Set the low VRAM address of the first character to transfer
     ; to the front of the first line in NT0. It's at index 2.
     ;
     LDA TextboxLineAddrsLo+2
-    STA $045F
+    STA PersonTextPtr
     ; If Grumble already got the food, then
     ; reset his type and state to get rid of him.
     ;
@@ -1205,7 +1195,7 @@ UpdateUnderworldPerson_Full_JumpTable:
 
 UpdatePersonState_ResetCharOffset:
     LDA #$00
-    STA $0416
+    STA PersonTextIndex
     INC ObjState+1
 UpdatePersonState_DoNothing:
     RTS

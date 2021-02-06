@@ -1,4 +1,5 @@
 .INCLUDE "Variables.inc"
+.INCLUDE "BeginEndVars.inc"
 
 .SEGMENT "BANK_02_00"
 
@@ -176,7 +177,7 @@ CommonMiscPatterns:
 
 InitDemo_RunTasks:
     JSR TurnOffAllVideo
-    LDA _Multi_042C
+    LDA DemoPhase
     BNE InitDemo_Phase1
     LDA DemoSubphase
     JSR TableJump
@@ -320,7 +321,7 @@ UpdateMode0Demo_Sub2:
     RTS
 
 AnimateDemo:
-    LDA _Multi_042C
+    LDA DemoPhase
     BNE AnimateDemo_Phase1
     LDA DemoSubphase
     JSR TableJump
@@ -520,9 +521,9 @@ InitDemoSubphaseTransferTitlePalette:
     STA _DemoLineTextIndex
     STA _DemoItemRow
 @ClearVars:
-    STA _Multi_0412, X
-    STA _Multi_041F, X
-    STA _Multi_0437, X
+    STA TriforceGlowTimer, X
+    STA InitializedWaterfallAnimation, X
+    STA DemoPhase0Subphase1Cycle, X
     DEX
     BPL @ClearVars
     LDX #$0A                    ; Mark objects 1 to 10 disabled.
@@ -605,7 +606,7 @@ AnimateDemoPhase1Subphase0:
     LDA CurVScroll              ; Have we scrolled to the bottom of nametable 2?
     CMP #$F0
     BNE @CheckVScroll
-    INC _ScrolledScreenCount    ; TODO: Set [$0415]
+    INC _ScrolledScreenCount
     ; The bottom of NT 2 is also the top of NT 0.
     ; So, reset CurVScroll and the base NT.
     LDA #$00
@@ -631,7 +632,7 @@ AnimateDemoPhase1Subphase1:
     BNE :+
     INC DemoSubphase            ; Go to the next subphase.
 :
-    LDA #$29                    ; TODO: Why these values? Why set them every frame?
+    LDA #$29
     STA DemoLineTileVramAddrHi
     LDA #$00
     STA DemoLineTileVramAddrLo
@@ -821,7 +822,7 @@ DisableFallenObjects:
     ; completely off the screen is $F0.
     CMP #$F0
     BNE @Next
-    LDA #$FF                    ; TODO: Set the corresponding ObjState to $FF.
+    LDA #$FF                    ; Set the corresponding state to disabled.
     STA ObjState, X
 @Next:
     DEX
@@ -846,19 +847,19 @@ ProcessDemoLineItems:
 @SetUpObject:
     LDY _DemoItemRow
     LDA DemoLeftItemIds, Y      ; Allocate an object for the item on the left.
-    STA _Multi_0444, X
+    STA DemoItemIds, X
     LDA #$EF                    ; Start at the bottom of the screen.
     STA ObjY, X
     LDA DemoItemColumnX1
     STA ObjX, X
     LDA #$00
     STA ObjState, X
-    LDA _Multi_0444, X
+    LDA DemoItemIds, X
     CMP #$30                    ; Link gets a special item ID.
     BCS @CenterLink             ; Go center the object horizontally, if it is Link.
     DEX                         ; Allocate another object for the item on the right.
     LDA DemoRightItemIds, Y
-    STA _Multi_0444, X
+    STA DemoItemIds, X
     LDA #$EF
     STA ObjY, X
     LDA DemoItemColumnX2
@@ -896,7 +897,7 @@ Demo_AnimateObjects:
     PHA
     ; Animate the fairy specially.
     ;
-    LDA _Multi_0444, X
+    LDA DemoItemIds, X
     CMP #$23
     BNE @AnimateNormal
     JSR AnimateStationaryFairy
@@ -947,7 +948,8 @@ AnimateDemoStoryFinalItems:
     ; The bottom nibble of the item type is an index into two
     ; tables. Each row has 6 bytes, one for each sprite of the
     ; item type.
-    LDA _Multi_0444, X
+    ;
+    LDA DemoItemIds, X
     AND #$0F
     ASL
     STA $00
@@ -1004,7 +1006,7 @@ AnimateDemoPhase1Subphase4:
     LDA #$00                    ; Go to phase 0 again, and initialize it.
     STA IsUpdatingMode
     STA DemoPhase0Subphase0Timer
-    STA _Multi_042C
+    STA DemoPhase
     STA DemoSubphase
     RTS
 
@@ -1024,15 +1026,16 @@ AnimateDemoPhase0Subphase0Artifacts:
     ; Copy initial sprite data to Sprites area.
     LDY #$70
 @CopySprites:
-    LDA AnimateDemo_Phase1_JumpTable+9, Y
-    STA $01FF, Y
+    LDA InitialTitleSprites-1, Y
+    STA Sprites-1, Y
     DEY
     BNE @CopySprites
     JSR UpdateWaterfallAnimation
     ; When you reach the end of the glow cycle,
     ; Append a transfer record for the triforce palette.
-    LDA _Multi_0412
-    BNE @DecGlowCycle
+    ;
+    LDA TriforceGlowTimer
+    BNE @DecGlowTimer
     LDY #$07
 @CopyTriforcePalette:
     LDA TriforcePaletteTransferRecord, Y
@@ -1045,17 +1048,17 @@ AnimateDemoPhase0Subphase0Artifacts:
     LDA TriforceGlowingColors, Y
     STA DynTileBuf+5
     LDA #$06                    ; Restart the glow timer.
-    STA _Multi_0412
+    STA TriforceGlowTimer
     INC _TriforceGlowCycle      ; Advance the glow cycle.
     LDA _TriforceGlowCycle
     CMP #$08                    ; When the glow cycle finishes,
-    BNE @DecGlowCycle
-    LDA #$10                    ; delay a twice as long for one step of the cycle.
-    STA _Multi_0412
+    BNE @DecGlowTimer
+    LDA #$10                    ; delay twice as long for one step of the cycle.
+    STA TriforceGlowTimer
     LDA #$00                    ; Restart the glow cycle.
     STA _TriforceGlowCycle
-@DecGlowCycle:
-    DEC _Multi_0412
+@DecGlowTimer:
+    DEC TriforceGlowTimer
     RTS
 
 WaterfallWaveTiles:
@@ -1074,21 +1077,23 @@ WaterfallWaveSpriteOffsets:
     .BYTE $A0, $B0, $C0, $D0, $E0
 
 UpdateWaterfallAnimation:
-    LDA _Multi_041F
+    LDA InitializedWaterfallAnimation
     BNE @UpdateSprites
     LDA #$B6                    ; Initialize animation values.
-    STA _TitleWaveYs
+    STA TitleWaveYs+0
     LDA #$C8
-    STA _TitleWaveYs+1
+    STA TitleWaveYs+1
     LDA #$D8
-    STA _TitleWaveYs+2
+    STA TitleWaveYs+2
+    ; TODO: Are these used?
+    ;
     LDA #$C0
     STA $0423
     LDA #$D0
     STA $0424
     LDA #$DD
     STA $0425
-    INC _Multi_041F
+    INC InitializedWaterfallAnimation
 @UpdateSprites:
     LDX #$02
 :
@@ -1101,13 +1106,14 @@ UpdateWaterfallAnimation:
 UpdateSpritesForWaterfallWave:
     ; Add 2 to current waterfall wave Y.
     ; But keep it in the range $B2..$E3.
-    INC _TitleWaveYs, X
-    INC _TitleWaveYs, X
-    LDA _TitleWaveYs, X
+    ;
+    INC TitleWaveYs, X
+    INC TitleWaveYs, X
+    LDA TitleWaveYs, X
     CMP #$E3
     BCC :+
     LDA #$B2
-    STA _TitleWaveYs, X
+    STA TitleWaveYs, X
 :
     STA $05                     ; Keep a copy of the new value in [$05].
     ; Depending on the Y coordinate of the wave,
@@ -1255,7 +1261,7 @@ AnimateDemoPhase0Subphase1:
     ; Addr = DemoPhase0Subphase1Palettes + (DemoPhase0Subphase1Palettes * $20)
     LDA #$00
     STA $01
-    LDA _Multi_0437
+    LDA DemoPhase0Subphase1Cycle
     ASL
     ASL
     ASL
@@ -1282,13 +1288,19 @@ AnimateDemoPhase0Subphase1:
     STA DynTileBuf+3, Y
     DEY
     BPL @CopyPalette
-    INC _Multi_0437             ; Advance the subphase cycle.
-    LDY _Multi_0437             ; Set the timer to the delay for the current point in the cycle.
+    ; Advance the subphase cycle.
+    ;
+    INC DemoPhase0Subphase1Cycle
+    ; Set the timer to the delay for the current point in the cycle.
+    ;
+    LDY DemoPhase0Subphase1Cycle
     LDA $9B68, Y
     STA _DemoPhase0Subphase1Timer
     CPY #$0E
     BCC @UpdateAnimation        ; If we reached the end of the cycle,
-    INC _Multi_042C             ; Advance to the next demo phase.
+    ; Advance to the next demo phase.
+    ;
+    INC DemoPhase
     LDA #$00                    ; Reset the demo subphase.
     STA DemoSubphase
     STA IsUpdatingMode          ; We have to initialize the new demo phase.

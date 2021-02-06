@@ -3023,6 +3023,18 @@ SaveFileAAddressSet2:
     .BYTE $6A, $60, $92, $63, $12, $60, $14, $65
     .BYTE $17, $65, $1A, $65, $1D, $65
 
+; TODO: [08:09]
+;
+; Returns:
+; [00:01]: items pointer
+; [02:03]: world flags pointer
+; [04:05]: name pointer
+; [06:07]: IsSaveSlotActive pointer
+; [08:09]:
+; [0A:0B]: death count pointer
+; [0C:0D]: quest pointer
+; [0E:0F]: profile/save-slot world flags pointer
+;
 FetchFileAAddressSet:
     LDA #$FF                    ; Calculate the end of the address set for current file.
     LDY CurSaveSlot

@@ -1361,6 +1361,17 @@ SaveFileBAddressSet2:
     .BYTE $E8, $68, $10, $6C, $90, $68, $92, $6D
     .BYTE $95, $6D, $98, $6D, $9B, $6D
 
+; TODO: [C8:C9]
+;
+; Returns:
+; [C0:C1]: items pointer
+; [C2:C3]: world flags pointer
+; [C4:C5]: name pointer
+; [C6:C7]: IsSaveSlotActive pointer
+; [C8:C9]:
+; [CA:CB]: death count pointer
+; [CC:CD]: quest pointer
+;
 FetchFileBAddressSet:
     LDA #$FF                    ; Calculate the end of the address set for current file.
     LDY CurSaveSlot
@@ -1375,7 +1386,7 @@ FetchFileBAddressSet:
     LDX #$0D
 @CopyAddresses:
     LDA SaveFileBAddressSets, Y
-    STA ObjShoveDir, X
+    STA $C0, X
     DEY
     DEX
     BPL @CopyAddresses
@@ -1603,8 +1614,8 @@ UpdateModeERegister:
     ; Silence tune channel 1.
     LDA #$00
     STA Tune1
-    STA $0425                   ; TODO: Reset [$0425].
-    STA $0423                   ; TODO: Reset [$0423].
+    STA $0425                   ; Reset SaveFileNameIndex.
+    STA $0423                   ; Reset SaveSlotNameIndex.
     STA CurSaveSlot             ; Reset CurSaveSlot.
     TAX                         ; X holds the current slot number
 @LoopSaveSlot:
@@ -1614,8 +1625,8 @@ UpdateModeERegister:
     TYA
     ASL
     TAY
-    LDA #$00
-    STA StillHoldingButton      ; TODO: Reset FileBReadyToSave [$0426].
+    LDA #$00                    ; Reset FileBReadyToSave [$0426].
+    STA $0426
     STA FileBChecksums, Y       ; Reset checksum for current save file B.
     INY
     STA FileBChecksums, Y
@@ -1627,8 +1638,8 @@ UpdateModeERegister:
 @CopyName:
     LDY $0423                   ; Copy next character from save slot info to file B.
     LDA Names, Y
-    LDY $0425                   ; TODO: [$0425] (and [$0423])
-    STA (ObjShoveDir+4), Y
+    LDY $0425                   ; SaveFileNameIndex
+    STA ($C4), Y
     CMP #$24
     BEQ @NextChar               ; If we copied a space, then go advance offsets and check things.
     LDA IsSaveSlotActive, X
@@ -1638,13 +1649,13 @@ UpdateModeERegister:
     ; Initialize file B hearts value to 3 heart containers and 2 hearts.
     LDY #$18
     LDA #$22
-    STA (ObjShoveDir), Y
+    STA ($C0), Y
     INY                         ; Initialize file B heart partial to full.
     LDA #$FF
-    STA (ObjShoveDir), Y
+    STA ($C0), Y
     LDY #$25                    ; Initialize file B's max bombs to 8.
     LDA #$08
-    STA (ObjShoveDir), Y
+    STA ($C0), Y
     TXA                         ; Save the current save slot number.
     PHA
     ASL                         ; Multiply it by 8 to get offset to current name in save slot info.
@@ -1670,19 +1681,19 @@ UpdateModeERegister:
     PLA                         ; Restore save slot number.
     TAX
     LDA #$01                    ; Set FileBReadyToSave [$0426].
-    STA StillHoldingButton
-    LDY #$00
-    STA (ObjShoveDir+6), Y      ; Set IsSaveSlotActive in file B.
+    STA $0426
+    LDY #$00                    ; Set IsSaveSlotActive in file B.
+    STA ($C6), Y
 @NextChar:
-    INC $0423                   ; TODO: Point to the next char in save slot info name.
-    INC $0425                   ; TODO: Point to the next char in save file B name.
-    LDA $0425                   ; TODO: [$0425]
+    INC $0423                   ; Point to the next char in save slot info name.
+    INC $0425                   ; Point to the next char in save file B name.
+    LDA $0425
     CMP #$08
     BNE @CopyName               ; If we haven't copied 8 characters from save slot info name, then go copy the next one.
     INX                         ; Make X refer to the next slot.
     LDA #$00                    ; Reset the offset to the next save file B char.
-    STA $0425                   ; TODO: [$0425]
-    LDA StillHoldingButton
+    STA $0425                   ; SaveFileNameIndex
+    LDA $0426
     BEQ :+                      ; If FileBReadyToSave [$0426] is set, then calculate and store the file B checksum, and mark file B uncommitted.
     JSR CalculateAndStoreFileBChecksumUncommitted
 :
@@ -1693,8 +1704,8 @@ UpdateModeERegister:
     JMP @LoopSaveSlot           ; then go process the next one.
 
 :
-    LDA #$00
-    STA StillHoldingButton      ; Reset FileBReadyToSave [$0426].
+    LDA #$00                    ; Reset FileBReadyToSave [$0426].
+    STA $0426
     STA CurSaveSlot             ; Reset CurSaveSlot.
     JSR ModeE_ResetVariables
     LDA #$01                    ; Make sure we stay updating.
@@ -1734,10 +1745,9 @@ UpdateModeFElimination:
 ModeE_ResetVariables:
     ; Assumes that zero is passed in A.
     ;
-    ; Reset CharBoardIndex [$041F].
-    STA _Multi_041F
-    STA _TitleWaveYs            ; Reset InitializedNameField [$0420].
-    STA _TitleWaveYs+1          ; Reset NameCharOffset [$0421].
+    STA CharBoardIndex
+    STA InitializedNameField
+    STA NameCharOffset
     RTS
 
 DeleteSlot:
@@ -1810,7 +1820,8 @@ ModeE_HandleDirectionButton:
     ; Pressed Right.
     ;
     ; Increase CharBoardIndex [$041F] to put cursor at character to the right.
-    INC _Multi_041F
+    ;
+    INC CharBoardIndex
     LDA ObjX+1                  ; Move the char board cursor right one spot.
     CLC
     ADC #$10
@@ -1823,8 +1834,8 @@ ModeE_HandleDirectionButton:
     JSR CycleCharBoardCursorY
     LDA ModeE_WrappedAroundBoardY
     BEQ :+                      ; If wrapped around to the top,
-    LDA #$00                    ; then reset CharBoardIndex [$041F].
-    STA _Multi_041F
+    LDA #$00                    ; then reset CharBoardIndex.
+    STA CharBoardIndex
 :
     JMP @FinishInput            ; Go finish.
 
@@ -1834,7 +1845,8 @@ ModeE_HandleDirectionButton:
     ; Pressed Left.
     ;
     ; Decrease CharBoardIndex [$041F] to put cursor at character to the left.
-    DEC _Multi_041F
+    ;
+    DEC CharBoardIndex
     LDA ObjX+1                  ; Move the char board cursor left one spot.
     SEC
     SBC #$10
@@ -1847,8 +1859,8 @@ ModeE_HandleDirectionButton:
     JSR CycleCharBoardCursorY
     LDA ModeE_WrappedAroundBoardY
     BEQ :+                      ; If wrapped around to the bottom,
-    LDA #$2B                    ; then set CharBoardIndex [$041F] to the last index.
-    STA _Multi_041F
+    LDA #$2B                    ; then set CharBoardIndex to the last index.
+    STA CharBoardIndex
 :
     JMP @FinishInput            ; Go finish.
 
@@ -1858,18 +1870,19 @@ ModeE_HandleDirectionButton:
     ; Pressed Down.
     ;
     ; Increase CharBoardIndex [$041F] by $B (one row down).
-    LDA _Multi_041F
+    ;
+    LDA CharBoardIndex
     CLC
     ADC #$0B
-    STA _Multi_041F
+    STA CharBoardIndex
     LDX #$00                    ; Cycle down.
     JSR CycleCharBoardCursorY
     LDA ModeE_WrappedAroundBoardY
     BEQ @Finish                 ; If didn't wrap around, then go finish.
-    LDA _Multi_041F             ; Wrapped around. So, move CharBoardIndex [$041F] to top row.
+    LDA CharBoardIndex          ; Wrapped around. So, move to top row.
     SEC
     SBC #$2C
-    STA _Multi_041F
+    STA CharBoardIndex
 @Finish:
     JMP @FinishInput            ; Go finish.
 
@@ -1879,18 +1892,19 @@ ModeE_HandleDirectionButton:
     ; Pressed Up.
     ;
     ; Decrease CharBoardIndex [$041F] by $B (one row up).
-    LDA _Multi_041F
+    ;
+    LDA CharBoardIndex
     SEC
     SBC #$0B
-    STA _Multi_041F
+    STA CharBoardIndex
     LDX #$03                    ; Cycle up.
     JSR CycleCharBoardCursorY
     LDA ModeE_WrappedAroundBoardY
     BEQ @FinishInput            ; If didn't wrap around, then go finish.
-    LDA _Multi_041F             ; Wrapped around. So, move CharBoardIndex [$041F] to bottom row.
+    LDA CharBoardIndex          ; Wrapped around. So, move to bottom row.
     CLC
     ADC #$2C
-    STA _Multi_041F
+    STA CharBoardIndex
 @FinishInput:
     LDA #$01
     STA SubsequentButtonRepeat
@@ -1924,7 +1938,7 @@ LA10A_Exit:
     RTS
 
 ModeE_HandleAOrB:
-    LDA _TitleWaveYs            ; InitializedNameField [$0420]
+    LDA InitializedNameField
     ; If InitializedNameField [$0420] is set, then skip initializing
     ; the name field.
     BNE @CheckAB
@@ -1934,18 +1948,18 @@ ModeE_HandleAOrB:
     ; Set NameCharOffset [$0421] to the offset of first char
     ; in the current slot's name.
     LDA SlotToNameOffset, Y
-    STA _TitleWaveYs+1
+    STA NameCharOffset
     ; Get the offset of the end of the initial name character
     ; transfer record header for the current slot.
     LDX SlotToInitialNameCharTransferHeaderEndOffsets, Y
     LDY #$02                    ; Each transfer record header is 3 bytes.
 @CopyHeaderTemplate:
     LDA SlotToInitialNameCharTransferHeaders, X
-    STA _TitleWaveYs+2, Y       ; Copy a byte of transfer header for current slot to [$0422][Y].
+    STA NameInputCharBuf, Y     ; Copy a byte of transfer header for current slot to [$0422][Y].
     DEX
     DEY
     BPL @CopyHeaderTemplate
-    INC _TitleWaveYs            ; Set InitializedNameField [$0420] to mark the name field initialized.
+    INC InitializedNameField    ; Set InitializedNameField [$0420] to mark the name field initialized.
 @CheckAB:
     ; At this point:
     ; - NameCharOffset [$0421] holds the offset of the first character in the save slot info name for the current slot.
@@ -1968,13 +1982,13 @@ ModeE_HandleAOrB:
     STY Tune0Request
     LDY #$02                    ; Copy our char transfer record header (in [$0422-0424]) to dynamic transfer buf.
 @CopyHeader:
-    LDA _TitleWaveYs+2, Y
+    LDA NameInputCharBuf, Y
     STA DynTileBuf, Y
     DEY
     BPL @CopyHeader
     STY DynTileBuf+4            ; Write the end marker to dynamic transfer buf.
-    LDX _TitleWaveYs+1          ; Get NameCharOffset at [$0421].
-    LDY _Multi_041F             ; CharBoardIndex in [$041F] will index into character map.
+    LDX NameCharOffset
+    LDY CharBoardIndex          ; CharBoardIndex in [$041F] will index into character map.
     LDA ModeE_CharMap, Y        ; Get the character that's highlighted.
     STA DynTileBuf+3            ; Write the chosen character to dynamic transfer buf.
     STA Names, X                ; Set the character in the name.
@@ -1983,8 +1997,8 @@ ModeE_HandleAOrB:
     CLC
     ADC #$08
     STA ObjX
-    INC _TitleWaveYs+1          ; Increment NameCharOffset [$0421].
-    INC $0423                   ; Increment the low VRAM address where next char will go.
+    INC NameCharOffset          ; Increment NameCharOffset [$0421].
+    INC NameInputCharBuf+1      ; Increment the low VRAM address where next char will go.
     ; If VRAM address still points inside the name field,
     ; then go finish.
     ;
@@ -1998,7 +2012,7 @@ ModeE_HandleAOrB:
     ; Keep in mind that [0423] is the second byte of the transfer
     ; record header.
     ;
-    LDA $0423
+    LDA NameInputCharBuf+1
     AND #$0F
     CMP #$06
     BNE @Exit
@@ -2006,15 +2020,16 @@ ModeE_HandleAOrB:
     ; So, wrap around to the beginning of the name field.
     ;
     ; For example, $20D6 -> $20CE.
-    LDA $0423
+    ;
+    LDA NameInputCharBuf+1
     SEC
     SBC #$08
-    STA $0423
+    STA NameInputCharBuf+1
     ; It also means that we went past the end of the save slot
     ; info name. Set the offset to the beginning of the name.
     LDY CurSaveSlot
     LDA SlotToNameOffset, Y
-    STA _TitleWaveYs+1          ; NameCharOffset [$0421].
+    STA NameCharOffset
     ; If the name cursor has gone past the end of the field,
     ; then wrap around.
     LDA ObjX
@@ -2150,9 +2165,9 @@ UpdateModeEandF_Idle:
     LDA #$70                    ; Name cursor X is $70.
     STA Sprites+7
     STA ObjX
-    LDA #$00
-    STA _TitleWaveYs            ; Reset InitializedNameField [$0420].
-    STA _TitleWaveYs+1          ; Reset NameCharOffset [$0420].
+    LDA #$00                    ; Reset InitializedNameField and NameCharOffset.
+    STA InitializedNameField
+    STA NameCharOffset
     LDY CurSaveSlot
     CPY #$03
     BEQ @Exit                   ; If selection is "End" option, then return.
@@ -2252,6 +2267,9 @@ UpdateMode0Demo_Sub1:
     INC GameSubmode             ; After checking every file, go to the next submode.
     RTS
 
+; Returns:
+; [0F:0E]: checksum
+;
 CalculateFileAChecksum:
     LDA #$00                    ; Reset the sum.
     STA $0E
@@ -2268,11 +2286,11 @@ CalculateFileAChecksum:
     JSR AddATo0F0E
     DEY
     BPL @SumItems
-    LDA #$80                    ; TODO: Put $0180 in [$01:00].
+    LDA #$80                    ; Will count $180 with [01:00].
     STA $01
     LDA #$01
     STA $00
-    LDY #$00                    ; TODO: Add $180 bytes from [[$02:03]] to [$0F:0E].
+    LDY #$00                    ; Add World Flags ($180 bytes) to [$0F:0E].
 @SumWorldFlags:
     LDA ($02), Y
     JSR AddATo0F0E
@@ -2314,11 +2332,11 @@ FormatFileA:
     STA ($00), Y
     DEY
     BPL @ClearItems
-    LDA #$80                    ; TODO: Put $0180 in [$01:00].
+    LDA #$80                    ; Will count $180 with [01:00].
     STA $01
     LDA #$01
     STA $00
-    LDY #$00                    ; TODO: Reset $180 bytes at [[$02:03]].
+    LDY #$00                    ; Reset World Flags ($180 bytes) at [$02:03].
 @ClearWorldFlags:
     LDA #$00
     STA ($02), Y
@@ -2378,44 +2396,47 @@ CalculateAndStoreFileBChecksumUncommitted:
     STA FileBChecksums, Y
     RTS
 
+; Returns:
+; [CF:CE]: checksum
+;
 CalculateFileBChecksum:
     LDA #$00                    ; Reset the sum.
     STA $CE
     STA $CF
     LDY #$07                    ; Sum the name (8 bytes).
 @SumName:
-    LDA (ObjShoveDir+4), Y
+    LDA ($C4), Y
     JSR AddAToCFCE
     DEY
     BPL @SumName
     LDY #$27                    ; Sum the $28 bytes of the file's Items block with [$CF:CE].
 @SumItems:
-    LDA (ObjShoveDir), Y
+    LDA ($C0), Y
     JSR AddAToCFCE
     DEY
     BPL @SumItems
-    LDA #$80                    ; TODO: Put $0180 in [$C1:C0].
-    STA ObjShoveDir+1
+    LDA #$80                    ; Will count $180 with [C1:C0].
+    STA $C1
     LDA #$01
-    STA ObjShoveDir
-    LDY #$00                    ; TODO: Add $180 bytes from [[$C2:C3]] to [$CF:CE].
+    STA $C0
+    LDY #$00                    ; Add World Flags ($180 bytes) to [CF:CE].
 @SumWorldFlags:
-    LDA (ObjShoveDir+2), Y
+    LDA ($C2), Y
     JSR AddAToCFCE
-    INC ObjShoveDir+2
+    INC $C2
     BNE :+
-    INC ObjShoveDir+3
+    INC $C3
 :
-    DEC ObjShoveDir+1
+    DEC $C1
     BNE @SumWorldFlags
-    DEC ObjShoveDir
-    LDA ObjShoveDir
+    DEC $C0
+    LDA $C0
     BPL @SumWorldFlags
-    LDA (ObjShoveDir+6), Y      ; Add IsSaveSlotActive byte to [$CF:CE].
+    LDA ($C6), Y                ; Add IsSaveSlotActive byte to [$CF:CE].
     JSR AddAToCFCE
-    LDA (ObjShoveDir+8), Y      ; Add DeathCount byte to [$CF:CE].
+    LDA ($C8), Y                ; Add DeathCount byte to [$CF:CE].
     JSR AddAToCFCE
-    LDA (ObjShoveDir+10), Y     ; TODO: Add byte at [[$CA:CB]] to [$CF:CE].
+    LDA ($CA), Y                ; TODO: Add byte at [[$CA:CB]] to [$CF:CE].
     JSR AddAToCFCE
     LDA ($CC), Y                ; Add byte QuestNumber to [$CF:CE].
 AddAToCFCE:
@@ -2431,36 +2452,36 @@ FormatFileB:
     LDY #$07                    ; Clear the name (to all spaces).
     LDA #$24
 @ClearName:
-    STA (ObjShoveDir+4), Y
+    STA ($C4), Y
     DEY
     BPL @ClearName
     LDY #$27                    ; Clear $28 bytes of the Items block in file.
     LDA #$00
 @ClearItems:
-    STA (ObjShoveDir), Y
+    STA ($C0), Y
     DEY
     BPL @ClearItems
-    LDA #$80                    ; TODO: Put $180 at [$C1:C0].
-    STA ObjShoveDir+1
+    LDA #$80                    ; Will count $180 with [C1:C0].
+    STA $C1
     LDA #$01
-    STA ObjShoveDir
-    LDY #$00                    ; TODO: Clear $180 bytes at [[$C2:C3]].
+    STA $C0
+    LDY #$00                    ; Clear $180 bytes of World flags.
 @ClearWorldFlags:
     LDA #$00
-    STA (ObjShoveDir+2), Y
-    INC ObjShoveDir+2
+    STA ($C2), Y
+    INC $C2
     BNE :+
-    INC ObjShoveDir+3
+    INC $C3
 :
-    DEC ObjShoveDir+1
+    DEC $C1
     BNE @ClearWorldFlags
-    DEC ObjShoveDir
-    LDA ObjShoveDir
+    DEC $C0
+    LDA $C0
     BPL @ClearWorldFlags
     LDA #$00                    ; Clear individual bytes.
-    STA (ObjShoveDir+6), Y      ; IsSaveSlotActive
-    STA (ObjShoveDir+8), Y      ; TODO: ?
-    STA (ObjShoveDir+10), Y     ; DeathCount
+    STA ($C6), Y                ; IsSaveSlotActive
+    STA ($C8), Y                ; TODO: ?
+    STA ($CA), Y                ; DeathCount
     STA ($CC), Y                ; QuestNumber
     JSR FetchFileBAddressSet
     JSR CalculateFileBChecksum  ; Leave the checksum at [$CF:CE].
@@ -2692,7 +2713,7 @@ UpdateMode1Menu_Sub0:
     RTS
 
 UpdateMode1Menu_Sub1:
-    LDA #$00                    ; TODO: Turn off music2.
+    LDA #$00
     STA Tune1
     LDA #$00
     STA CurLevel                ; Begin in OW.
@@ -2718,7 +2739,7 @@ UpdateMode1Menu_Sub1:
     STA Items, Y
     DEY
     BPL @CopyItems
-    LDA #$00                    ; TODO: ?
+    LDA #$00
     STA SwordBlocked
     STA ObjState                ; Reset player state.
     STA InvClock                ; Reset clock item.
@@ -2846,15 +2867,15 @@ UpdateModeDSave_Sub0:
     LDY #$27                    ; Copy Items block ($28 bytes) from profile to file B.
 @CopyItems:
     LDA Items, Y
-    STA (ObjShoveDir), Y
+    STA ($C0), Y
     DEY
     BPL @CopyItems
     LDY CurSaveSlot
     LDA DeathCounts, Y          ; Copy death count from profile to file B.
     LDY #$00
-    STA (ObjShoveDir+10), Y
+    STA ($CA), Y
     LDA #$01                    ; We're saving, so make sure the current slot is active.
-    STA (ObjShoveDir+6), Y
+    STA ($C6), Y
     LDY CurSaveSlot
     STA IsSaveSlotActive, Y     ; Also set the slot active in the save slot info.
     LDA QuestNumbers, Y         ; Copy quest number from profile to file B.
@@ -2864,7 +2885,7 @@ UpdateModeDSave_Sub0:
     LDY #$07                    ; Copy name from save slot info to file B.
 @CopyName:
     LDA ($0C), Y
-    STA (ObjShoveDir+4), Y
+    STA ($C4), Y
     DEY
     BPL @CopyName
     LDA HeartValues             ; Put in [$0A] a full hearts value for the profile's heart containers.
@@ -2881,13 +2902,13 @@ UpdateModeDSave_Sub0:
     LDA #$FF                    ; Completely fill the hearts.
     STA HeartPartial
     JSR StoreSaveSlotHearts
-    LDY #$00                    ; TODO: Copy $180 bytes from profile to file B.
+    LDY #$00                    ; Copy World Flags ($180 bytes) from profile to file B.
 @CopyWorldFlags:
     LDA ($0E), Y
-    STA (ObjShoveDir+2), Y
-    INC ObjShoveDir+2
+    STA ($C2), Y
+    INC $C2
     BNE :+
-    INC ObjShoveDir+3
+    INC $C3
 :
     INC $0E
     BNE :+
@@ -2950,16 +2971,16 @@ CopyFileBToFileA:
     JSR FetchFileAAddressSet    ; TODO: This puts $067F in [$0E:0F].
     LDY #$27                    ; Copy Items block ($28 bytes) from file B to file A.
 @CopyItems:
-    LDA (ObjShoveDir), Y
+    LDA ($C0), Y
     STA ($00), Y
     DEY
     BPL @CopyItems
     LDY #$00                    ; Copy these individual bytes from file B to file A.
-    LDA (ObjShoveDir+6), Y      ; IsSaveSlotActive
+    LDA ($C6), Y                ; IsSaveSlotActive
     STA ($06), Y
-    LDA (ObjShoveDir+8), Y      ; TODO: ?
+    LDA ($C8), Y                ; TODO: ?
     STA ($08), Y
-    LDA (ObjShoveDir+10), Y     ; DeathCount
+    LDA ($CA), Y                ; DeathCount
     STA ($0A), Y
     LDA ($CC), Y                ; QuestNumber
     STA ($0C), Y
@@ -2978,23 +2999,23 @@ CopyFileBToFileA:
     STA IsSaveSlotActive, Y
     LDY #$07                    ; Copy the name from file B to file A.
 @CopyName:
-    LDA (ObjShoveDir+4), Y
+    LDA ($C4), Y
     STA ($04), Y
     DEY
     BPL @CopyName
-    ; TODO: Copy $180 bytes file B to file A.
+    ; Copy World Flags ($180 bytes) file B to file A.
     ; It counts up from what's in [$0E:0F] ($067F) to $07FF.
     LDY #$00
 @CopyWorldFlags:
-    LDA (ObjShoveDir+2), Y
+    LDA ($C2), Y
     STA ($02), Y
     INC $02
     BNE :+
     INC $03
 :
-    INC ObjShoveDir+2
+    INC $C2
     BNE :+
-    INC ObjShoveDir+3
+    INC $C3
 :
     INC $0E
     BNE :+
@@ -3031,6 +3052,9 @@ UpdateModeDSave_Sub2:
     STA GameSubmode
     RTS
 
+; Returns:
+; [0C:0D]: save slot name pointer
+;
 FetchProfileNameAddress:
     LDY CurSaveSlot
     LDA ProfileNameAddrsLo, Y

@@ -3158,9 +3158,9 @@ InitMode13_Sub1:
     ; and reset the current character index.
     ;
     LDA #$A4
-    STA $045F
+    STA TextboxCharPtr
     LDA #$00
-    STA $0416
+    STA TextboxCharIndex
     STA ObjState+1
     INC GameSubmode
 LA958_Exit:
@@ -3218,22 +3218,22 @@ UpdateZeldaTextbox:
     ; Replace the low byte of the VRAM address with the one
     ; where the next character should be written.
     ;
-    LDA $045F
+    LDA TextboxCharPtr
     STA DynTileBuf+1
     ; Increment the low VRAM address for the next character.
     ;
-    INC $045F
+    INC TextboxCharPtr
     LDA #$59
     STA $00
     LDA #$A9
     STA $01
     ; Load the person text current character index.
     ;
-    LDY $0416
+    LDY TextboxCharIndex
     ; Increment the index variable to point to the next character
     ; for the next time.
     ;
-    INC $0416
+    INC TextboxCharIndex
     ; Get the current character.
     ;
     LDA ($00), Y
@@ -3276,7 +3276,7 @@ UpdateZeldaTextbox:
     ;   2: $A4: front of the first line
     ;
     LDA ThanksTextboxLineAddrsLo, Y
-    STA $045F
+    STA TextboxCharPtr
     ; If index = 2, then we've reached the end of the text,
     ; and low VRAM address is moved to the front of the first line.
     ; So, advance the state of the person object, and unhalt Link.
@@ -3300,8 +3300,8 @@ InitMode13_Sub4:
     LDA #$08
     STA CreditsTileOffset
     JSR BeginUpdateMode
-    STA _Multi_0412
-    STA _TriforceGlowCycle
+    STA PeaceCharDelayCounter
+    STA PeaceCharIndex
     JMP HideAllSprites
 
 UpdateMode13WinGame:
@@ -3365,7 +3365,7 @@ UpdateMode13WinGame_Sub0_Flash:
     ; of the next submode.
     ;
     LDA #$40
-    STA _RedLeeverLongTimer
+    STA EndingFlashLongTimer
     INC GameSubmode
     JMP @ChangePalette
 
@@ -3419,14 +3419,14 @@ DrawLinkZeldaTriforces:
     RTS
 
 UpdateMode13WinGame_Sub1:
-    LDA _RedLeeverLongTimer
+    LDA EndingFlashLongTimer
     BEQ @AdvanceSubmode
     JSR HideAllSprites
     ; Characters stop emitting when the long timer is $10.
     ; So, keep showing Link and Zelda until it reaches 4.
     ; Then hide them and wait until it reaches 0.
     ;
-    LDA _RedLeeverLongTimer
+    LDA EndingFlashLongTimer
     CMP #$04
     BCC @Exit
     JSR DrawLinkZeldaTriforces
@@ -3476,8 +3476,8 @@ UpdatePeaceTextbox:
     ; Only emit a character once every 8 frames --
     ; when (counter [0412] MOD 8) = 4.
     ;
-    INC _Multi_0412
-    LDA _Multi_0412
+    INC PeaceCharDelayCounter
+    LDA PeaceCharDelayCounter
     AND #$07
     CMP #$04
     BNE @Exit
@@ -3493,7 +3493,7 @@ UpdatePeaceTextbox:
     ; Load a character from the string and copy it to
     ; the transfer record until we read character $FF.
     ;
-    LDY _TriforceGlowCycle
+    LDY PeaceCharIndex
     LDA PeaceText, Y
     CMP #$FF
     BEQ @AdvanceSubmode
@@ -3508,7 +3508,7 @@ UpdatePeaceTextbox:
 :
     ; Point to the next character in the string.
     ;
-    INC _TriforceGlowCycle
+    INC PeaceCharIndex
     ; Replace the low byte of the VRAM address with the one
     ; where the next character should be written.
     ;

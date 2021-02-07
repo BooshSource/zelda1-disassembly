@@ -1342,7 +1342,7 @@ UpdateUnderworldPersonLifeOrMoney_Full:
     BNE :+
 @Draw:
     JSR Person_DrawAndCheckCollisions
-    JSR _DrawLifeOrMoneyItems
+    JSR DrawLifeOrMoneyItems
 :
     LDA ObjState+1
     JSR TableJump
@@ -1359,7 +1359,7 @@ LifeOrMoneyItemXs:
 LifeOrMoneyItemTypes:
     .BYTE $1A, $18
 
-_DrawLifeOrMoneyItems:
+DrawLifeOrMoneyItems:
     ; Loop over each item to draw, from 1 to 0.
     ;
     LDX #$01
@@ -1882,7 +1882,7 @@ UpdateWhirlwind_Full:
     PLA
     TAX
 @Draw:
-    JMP _DrawWhirlwind
+    JMP DrawWhirlwind
 
 DestroyWhirlwind:
     LDA #$00
@@ -1980,7 +1980,7 @@ AdvanceTeleportingLevelIndex:
 L6104_Exit:
     RTS
 
-_DrawWhirlwind:
+DrawWhirlwind:
     ; Frames last 1 screen frame.
     ;
     LDA #$01

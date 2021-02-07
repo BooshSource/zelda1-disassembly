@@ -2365,7 +2365,7 @@ PutLinkBehindBackground:
     RTS
 
 CheckUnderworldSecrets:
-    JSR _CheckHasLivingMonsters
+    JSR CheckHasLivingMonsters
     ; If there's no secret in this room, return.
     ;
     LDA LevelBlockAttrsByteF
@@ -2412,7 +2412,7 @@ CheckSecretTrigger_JumpTable:
     .ADDR CheckSecretTriggerMoneyOrLife
     .ADDR CheckSecretTriggerAllDead
 
-_CheckHasLivingMonsters:
+CheckHasLivingMonsters:
     ; Look for monsters in slots $C to 1 that are not bubbles.
     ; If one is found, return.
     ;
@@ -5088,7 +5088,7 @@ UpdateDoors:
     JSR FindDoorAttrByDoorBit
     CMP #$07
     BEQ :+
-    JMP _L_ResetDoorCmdAndLayOutDoors
+    JMP L_ResetDoorCmdAndLayOutDoors
 
 :
     ; TriggeredDoorCmd >= 5 or door type = 7
@@ -5172,9 +5172,9 @@ UpdateDoors:
     LDA TriggeredDoorDir        ; Remove the triggered door from opened door mask.
     EOR #$0F
     AND CurOpenedDoors
-_L_SetOpenedDoorMaskAndResetCmdAndLayOutDoors:
+L_SetOpenedDoorMaskAndResetCmdAndLayOutDoors:
     STA CurOpenedDoors
-_L_ResetDoorCmdAndLayOutDoors:
+L_ResetDoorCmdAndLayOutDoors:
     LDA #$00                    ; Reset door command
     STA TriggeredDoorCmd
     JMP LayOutDoors
@@ -5219,7 +5219,7 @@ _L_ResetDoorCmdAndLayOutDoors:
     ;
     LDA TriggeredDoorDir
     ORA CurOpenedDoors
-    JMP _L_SetOpenedDoorMaskAndResetCmdAndLayOutDoors
+    JMP L_SetOpenedDoorMaskAndResetCmdAndLayOutDoors
 
 ; Params:
 ; [08]: 0 if closed

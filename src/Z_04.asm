@@ -1139,7 +1139,7 @@ UpdateBubble:
     ; Animation counter 1 to switch animation frames every screen frame.
     ;
     LDA #$01
-    JSR _AnimateAndDrawCommonObject
+    JSR AnimateAndDrawCommonObject
     JSR CheckLinkCollision
     ; If no collision, then return.
     ;
@@ -1171,7 +1171,7 @@ UpdateBubble:
 ; A: new value for animation counter
 ; X: object index
 ;
-_AnimateAndDrawCommonObject:
+AnimateAndDrawCommonObject:
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
     JSR Anim_SetObjHFlipForSpriteDescriptor
     LDA #$00
@@ -1299,7 +1299,7 @@ CreateChildGel:
     ; Use the shooting operation to create the gel object.
     ;
     STA $00
-    JSR _ShootLimited
+    JSR ShootLimited
     ; Shots start in state $10. But Child Gel needs to start in state 0.
     ;
     LDA #$00
@@ -2360,7 +2360,7 @@ UpdateTektiteOrBoulder:
     ;
     ; Keep the object inside the bounds of the room.
     ;
-    JSR _BoundFlyer
+    JSR BoundFlyer
     ; If the object was blocked at the room boundary, then
     ; increase boundary reversal count, and go set up another jump.
     ;
@@ -3365,7 +3365,7 @@ DrawArmosAndCheckCollisions:
     JMP CheckLinkCollision
 
 UpdatePondFairy:
-    JSR _DrawFairy
+    JSR DrawFairy
     ; If not in state 0, then go handle states 1 to 3.
     ;
     LDA ObjState+1
@@ -4676,7 +4676,7 @@ UpdateStalfos:
     JSR UpdateCommonWanderer
     JSR CheckMonsterCollisions
     LDA #$08                    ; Animation counter 8
-    JSR _AnimateAndDrawCommonObject
+    JSR AnimateAndDrawCommonObject
     LDA #$20                    ; QSpeed $20
     STA $01                     ; [01] holds qspeed $20
     ; If in the first quest, return. Stalfos can't shoot in this quest.
@@ -5300,7 +5300,7 @@ L_Digdogger_DrawAndCheckCollisions:
     ;
     LDA Digdogger_ObjIsChild, X
     BEQ CheckBigDigdoggerCollisions
-    JSR _BoundFlyer
+    JSR BoundFlyer
     JSR CheckMonsterCollisions
     JMP Digdogger_Draw
 
@@ -5336,7 +5336,7 @@ CheckBigDigdoggerCollisions:
     STA ObjY, X
     ; Check the room boundary and object collisions in this temporary location.
     ;
-    JSR _BoundFlyer
+    JSR BoundFlyer
     JSR CheckMonsterCollisions
     ; Increase the loop index, and loop again until it = 4.
     ;
@@ -6948,7 +6948,7 @@ UpdateVire:
     BEQ @NextLoopMakeKeese
     LDA #$1C                    ; Red Keese object type
     STA $00
-    JSR _Shoot
+    JSR Shoot
 @NextLoopMakeKeese:
     PLA                         ; Restore loop counter.
     TAY
@@ -7475,7 +7475,7 @@ ShootMagicShot:
     ;
     LDA #$04
     STA Tune0Request
-    JMP _ShootLimited
+    JMP ShootLimited
 
 UpdateRedWizzrobe:
     ; If we have the magic clock, then go check collisions and draw.
@@ -8174,7 +8174,7 @@ Manhandla_Move:
     ADC $03
     ADC Manhandla_ObjFrameAccum, X
     STA Manhandla_ObjFrameAccum, X
-    JSR _BoundFlyer
+    JSR BoundFlyer
     ; TODO:
     ; I don't see why this is needed.
     ;
@@ -8573,11 +8573,11 @@ ControlGleeokHeadFlight:
     JSR TableJump
 ControlGleeokHeadFlight_JumpTable:
     .ADDR Flyer_SpeedUp
-    .ADDR _Flyer_GleeokHeadDecideState
+    .ADDR Flyer_GleeokHeadDecideState
     .ADDR Flyer_Chase
     .ADDR Flyer_Wander
 
-_Flyer_GleeokHeadDecideState:
+Flyer_GleeokHeadDecideState:
     ; Go to the next flying state randomly:
     ; Random < $D0: 2
     ; Else:         3
@@ -9698,7 +9698,7 @@ UpdateZelda_State1:
 
 UpdateGuardFire:
     LDA #$06                    ; Animation counter 6
-    JSR _AnimateAndDrawCommonObject
+    JSR AnimateAndDrawCommonObject
     JSR CheckMonsterCollisions
     ; If the object has not been killed, then return.
     ; Else change the object type to dead dummy.
@@ -10092,7 +10092,7 @@ UpdatePatra:
     STA Flyer_ObjOffsetY, X
     JSR MoveFlyer
     LDA #$02                    ; 2 animation frames a screen frame
-    JSR _AnimateAndDrawCommonObject
+    JSR AnimateAndDrawCommonObject
     ; Loop over the object slots of the 8 children.
     ; If any are found, then go check for collision with Link only.
     ;
@@ -11387,7 +11387,7 @@ _ShootIfWanted:
 ;
 ; If no slot is found, return C=0.
 ;
-_ShootLimited:
+ShootLimited:
     JSR FindEmptyMonsterSlot
     BEQ ReturnDidNotShoot
     ; If the object type to shoot is a true shot (projectile),
@@ -11395,7 +11395,7 @@ _ShootLimited:
     ;
     LDA $00
     CMP #$53
-    BCC _Shoot
+    BCC Shoot
     LDA ActiveMonsterShots
     CMP #$04
     BCS ReturnDidNotShoot
@@ -11413,7 +11413,7 @@ _ShootLimited:
 ; Description:
 ; The shot starts in state $10.
 ;
-_Shoot:
+Shoot:
     LDX EmptyMonsterSlot
     LDA $00
     JSR SetTypeAndClearObject
@@ -11526,7 +11526,7 @@ ResetFlyerState:
 UpdateFairyObject:
     JSR ControlFairyFlight
     JSR MoveFlyer
-_DrawFairy:
+DrawFairy:
     JSR Anim_FetchObjPosForSpriteDescriptor
     JSR Anim_SetSpriteDescriptorRedPaletteRow
     ; Every 4 frames, switch between the two sprite frames.
@@ -11659,7 +11659,7 @@ MoveFlyer:
     ; the bounds of the room.
     ;
     INC Flyer_ObjDistTraveled, X
-    JSR _BoundFlyer
+    JSR BoundFlyer
 @Exit:
     RTS
 
@@ -11667,7 +11667,7 @@ MoveFlyer:
 ; A: original facing or the opposite
 ; [0F]: 0 if blocked
 ;
-_BoundFlyer:
+BoundFlyer:
     LDA ObjDir, X
     STA $0F
     JSR BoundDirectionHorizontally

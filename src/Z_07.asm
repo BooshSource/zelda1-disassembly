@@ -5088,7 +5088,7 @@ SetUpWalkingSprites:
 ; [0F]: flip horizontal, based on ObjMovementFrame
 ;
 Anim_SetObjHFlipForSpriteDescriptor:
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     STA $0F
     RTS
 
@@ -5098,7 +5098,7 @@ SetUpHorizontalWalkingSprites:
     ;
     ; Assume animation frame 0 (legs apart).
     LDY #$00
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     BEQ :+
     INY                         ; If walking frame 1, then animation frame 1 (legs together).
 :
@@ -5150,9 +5150,9 @@ Anim_FetchObjPosForSpriteDescriptor:
 RollOverAnimCounter:
     LDA $00
     STA ObjAnimCounter, X
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     EOR #$01
-    STA _ObjMovementFrame, X
+    STA ObjAnimFrame, X
     RTS
 
 AnimateLinkObjState:
@@ -5198,7 +5198,7 @@ AnimateLinkObjState:
     ; 0 (legs apart) after this.
     ;
     LDA #$01
-    STA _ObjMovementFrame
+    STA ObjAnimFrame
     RTS
 
 @CheckState30:

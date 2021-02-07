@@ -1887,7 +1887,7 @@ InitFastOctorock:
     ASL
     STA ObjTimer, X
     JSR ResetObjState
-    STA _ObjMovementFrame, X    ; Reset movement frame.
+    STA ObjAnimFrame, X         ; Reset movement frame.
     LDA #$06
     STA ObjAnimCounter, X
     JMP InitWalker
@@ -2493,7 +2493,7 @@ Jumper_AnimateAndCheckCollisions:
     ;
     LDA #$10
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
 @DrawTektite:
     JMP DrawObjectMirroredAndCheckCollisions
 
@@ -2502,7 +2502,7 @@ Jumper_AnimateAndCheckCollisions:
     ;
     LDA #$06
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
-    LDA _ObjMovementFrame, X    ; TODO: The movement frame determines the frame image.
+    LDA ObjAnimFrame, X         ; TODO: The movement frame determines the frame image.
     JSR DrawObjectNotMirroredAndCheckLinkCollision
     ; If the boulder's Y < $F0, return.
     ;
@@ -2692,7 +2692,7 @@ Burrower_AnimateDrawAndCheckCollisions:
     SBC #$01
     ASL
     CLC
-    ADC _ObjMovementFrame, X
+    ADC ObjAnimFrame, X
 @Draw:
     JSR DrawObjectMirrored
     ; If not zora and state <> 3, 
@@ -3033,14 +3033,14 @@ UpdateOctorock:
     ; So, XOR the movement frame with 3.
     ;
     LSR
-    EOR _ObjMovementFrame, X
-    STA _ObjMovementFrame, X
+    EOR ObjAnimFrame, X
+    STA ObjAnimFrame, X
 @CalcFinalOffset:
     ; Add the base offset and the directional offset, and save the result.
     ;
     PLA
     CLC
-    ADC _ObjMovementFrame, X
+    ADC ObjAnimFrame, X
     PHA
     ; If facing vertically, go draw mirrored.
     ;
@@ -3327,9 +3327,9 @@ UpdateArmos:
     ; Here flip between the two sets by XOR'ing with 2.
     ; Then choose the direction at the point of drawing below.
     ;
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     EOR #$02
-    STA _ObjMovementFrame, X
+    STA ObjAnimFrame, X
 DrawArmosAndCheckCollisions:
     JSR Anim_FetchObjPosForSpriteDescriptor
     LDY ObjDir, X
@@ -3341,7 +3341,7 @@ DrawArmosAndCheckCollisions:
     LDA #$01
 :
     CLC
-    ADC _ObjMovementFrame, X
+    ADC ObjAnimFrame, X
     JSR DrawObjectNotMirrored
     ; If the armos is still fading in, then go for check collision with Link,
     ; but not with weapons.
@@ -4250,7 +4250,7 @@ UpdateWallmaster:
     LDA #$00
     STA ObjGridOffset, X
     STA Wallmaster_ObjTilesCrossed, X
-    STA _ObjMovementFrame, X
+    STA ObjAnimFrame, X
     ; Start Wallmaster state 1.
     ;
     INC ObjState, X
@@ -4350,7 +4350,7 @@ L_Wallmaster_State1:
     LDA RollingSpriteIndex
     PHA                         ; Save the sprite index
     JSR Wallmaster_PrepareToDraw
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JSR DrawObjectNotMirrored
     PLA                         ; Restore the sprite index
     ; Store the offset of the left sprite record in [00],
@@ -4367,7 +4367,7 @@ L_Wallmaster_State1:
     ; If animation frame = 0, then return.
     ;
     LDX CurObjIndex
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     BEQ @Exit
     ; Animation frame 1 uses Wallmaster frame image 1, which
     ; uses tiles $9C/$9D on the left and $9E/$9F on the right.
@@ -4404,7 +4404,7 @@ L_Wallmaster_State1:
     ; Force animation frame 1: hand closed.
     ;
     LDA #$01
-    STA _ObjMovementFrame, X
+    STA ObjAnimFrame, X
     JSR DrawObjectNotMirroredOverLink
     ; Store the offsets of the sprites to show over Link
     ; ($10 and $11) in [00] and [01] for use in patching the right sprite.
@@ -4646,7 +4646,7 @@ UpdateRope:
 @Draw:
     ; The frame image is based on the movement frame.
     ;
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JSR DrawObjectNotMirrored
     JMP CheckMonsterCollisions
 
@@ -5596,7 +5596,7 @@ Digdogger_Draw:
     ; A little digdogger is easy to draw.
     ;
     JSR Anim_SetSpriteDescriptorLevelPaletteRow
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JMP DrawObjectMirrored
 
 UpdateAquamentus:
@@ -6502,7 +6502,7 @@ UpdateDarknut:
     ; If movement frame = 1, add 3 to frame image to access
     ; the second animation frame's images.
     ;
-    LDY _ObjMovementFrame, X
+    LDY ObjAnimFrame, X
     BEQ :+
     CLC
     ADC #$03
@@ -6666,7 +6666,7 @@ UpdatePolsVoice:
 L_PolsVoice_DrawAndCheckCollisions:
     LDA #$08                    ; Animation counter 8
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JSR DrawObjectMirrored
     ; Pols Voice is invincible to everything but the sword,
     ; during normal collision detection.
@@ -6835,16 +6835,16 @@ UpdateLikeLike:
     BNE @Draw
     LDA #$08
     STA ObjAnimCounter, X
-    LDY _ObjMovementFrame, X
+    LDY ObjAnimFrame, X
     INY
     TYA
     AND #$03
-    STA _ObjMovementFrame, X
+    STA ObjAnimFrame, X
 @Draw:
     ; Draw.
     ;
     JSR Anim_FetchObjPosForSpriteDescriptor
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JSR DrawObjectMirrored
     ; Check collisions. If Link was not captured, then return.
     ;
@@ -6867,7 +6867,7 @@ UpdateLikeLike:
     STA ObjShoveDistance
     ; Restart the monster's movement frame cycle: frame 0, counter 4
     ;
-    STA _ObjMovementFrame, X
+    STA ObjAnimFrame, X
     LDA #$04
     STA ObjAnimCounter, X
     ; Now Link can't move.
@@ -6880,13 +6880,13 @@ UpdateLikeLike:
     ; Animate up to frame 3. Then stay there.
     ;
     LDA #$02
-    CMP _ObjMovementFrame, X
+    CMP ObjAnimFrame, X
     BCC @IncCaptureTime
     DEC ObjAnimCounter, X
     BNE @IncCaptureTime
     ASL
     STA ObjAnimCounter, X
-    INC _ObjMovementFrame, X
+    INC ObjAnimFrame, X
 @IncCaptureTime:
     ; Increment capture time.
     ;
@@ -6907,7 +6907,7 @@ UpdateLikeLike:
     ; So, don't use the usual sprite writing code that cycles sprites.
     ;
     JSR Anim_FetchObjPosForSpriteDescriptor
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JSR DrawObjectMirroredOverLink
     ; Check object collisions.
     ; If this monster hasn't died, then return.
@@ -7027,7 +7027,7 @@ DrawVire:
     LSR
     LSR
     CLC
-    ADC _ObjMovementFrame, X
+    ADC ObjAnimFrame, X
     JMP DrawObjectMirrored
 
 UpdateBlueWizzrobe:
@@ -8446,7 +8446,7 @@ Gohma_DrawLegsOneSide:
     JSR Anim_SetObjHFlipForSpriteDescriptor
     TYA
     CLC
-    ADC _ObjMovementFrame, X
+    ADC ObjAnimFrame, X
     AND #$01                    ; There are only two images.
     CLC
     ADC #$04                    ; Leg frame images start at 4.
@@ -8557,7 +8557,7 @@ UpdateGleeokHead:
 :
     LDA #$01                    ; Switch animation frames every screen frame.
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JSR DrawObjectMirrored
     JSR CheckMonsterCollisions
     ; Reset object state, shove info, and invincibility timer,
@@ -10330,7 +10330,7 @@ PatraChild_Draw:
     ; Pass it as the animation counter value to the routine below.
     ;
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
-    LDA _ObjMovementFrame, X
+    LDA ObjAnimFrame, X
     JMP DrawObjectNotMirrored
 
 UpdateGanon:

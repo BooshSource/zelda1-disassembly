@@ -93,7 +93,6 @@
 .IMPORT UpdateTriforcePositionMarker
 .IMPORT WieldFlute
 
-.EXPORT _SetupObjRoomBounds
 .EXPORT AnimateAndDrawLinkBehindBackground
 .EXPORT CalculateNextRoomForDoor
 .EXPORT ChangePlayMapSquareOW
@@ -139,6 +138,7 @@
 .EXPORT Link_HandleInput
 .EXPORT MaskCurPpuMaskGrayscale
 .EXPORT ResetInvObjState
+.EXPORT SetupObjRoomBounds
 .EXPORT UpdateDoors
 .EXPORT UpdateMenuAndMeters
 .EXPORT UpdateMode10Stairs_Full
@@ -1707,7 +1707,7 @@ InitMode_EnterRoom:
     LDA EnteringRoomRelativePositions, Y
 @PlaceObjects:
     STA ObjGridOffset
-    JSR _SetupObjRoomBounds
+    JSR SetupObjRoomBounds
     ; Set current object slot variable to $B, to be ready for the
     ; first frame of mode 5. So, that it begins updating objects
     ; at slot $B.
@@ -2434,14 +2434,14 @@ CheckHasLivingMonsters:
     BPL @Loop
     LDA #$00
     STA LinkParalyzed
-    INC _RoomAllDead
+    INC RoomAllDead
 @Exit:
     RTS
 
 CheckSecretTriggerAllDead:
     ; If there are still monsters, not counting bubbles, then return C=0.
     ;
-    LDA _RoomAllDead
+    LDA RoomAllDead
     BEQ ReturnFalse
 TriggerShutters:
     ; No monsters are left. Trigger shutters to open, and return C=1.
@@ -6426,7 +6426,7 @@ InitMode3_Sub8:
     STA ObjY
     JMP BeginUpdateMode
 
-_AllObjRoomBounds:
+ObjectRoomBoundsOW:
     ; Two sets of 5 elements:
     ; * left bound for objects
     ; * right bound for objects
@@ -6436,10 +6436,12 @@ _AllObjRoomBounds:
     ;
     ; The first set is for OW. The second is for UW.
     ;
-    .BYTE $11, $E0, $4E, $CD, $89, $21, $D0, $5E
-    .BYTE $BD, $78
+    .BYTE $11, $E0, $4E, $CD, $89
 
-_SetupObjRoomBounds:
+ObjectRoomBoundsUW:
+    .BYTE $21, $D0, $5E, $BD, $78
+
+SetupObjRoomBounds:
     LDY #$05                    ; Offset of second set of bounds.
     LDA CurLevel
     BNE :+                      ; If in UW, use second of bounds, and go copy them.
@@ -6452,7 +6454,7 @@ _SetupObjRoomBounds:
 :
     LDX #$00
 :
-    LDA _AllObjRoomBounds, Y
+    LDA ObjectRoomBoundsOW, Y
     STA RoomBoundLeft, X
     INY
     INX

@@ -1952,7 +1952,7 @@ SummonWhirlwind:
     ; If already summoned or in the middle of teleporting, then
     ; return and don't summon another one.
     ;
-    LDA _SummonedWhirlwind
+    LDA SummonedWhirlwind
     ORA WhirlwindTeleportingState
     BNE L6104_Exit
     ; Return if we can't find an empty monster slot.
@@ -1962,7 +1962,7 @@ SummonWhirlwind:
     ; An empty slot was found. Flag that summoned the whirlwind.
     ; Switch to the empty slot, and go set up a whirlwind object.
     ;
-    INC _SummonedWhirlwind
+    INC SummonedWhirlwind
     TYA
     TAX
     JMP SetUpWhirlwind

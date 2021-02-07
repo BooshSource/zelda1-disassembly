@@ -627,7 +627,7 @@ UpdateBlock_JumpTable:
 UpdateBlock0Idle:
     ; If there are monsters in the room, go reset the push timer and return.
     ;
-    LDA _RoomAllDead
+    LDA RoomAllDead
     BEQ ResetPushTimer
     ; If Link's X is aligned with the block's, then get the difference
     ; between Link's (Y + 3) and the block's Y.

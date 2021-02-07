@@ -194,7 +194,6 @@
 
 ; Imports from program bank 05
 
-.IMPORT _SetupObjRoomBounds
 .IMPORT AnimateAndDrawLinkBehindBackground
 .IMPORT CalculateNextRoomForDoor
 .IMPORT ChangePlayMapSquareOW
@@ -237,6 +236,7 @@
 .IMPORT IsDistanceSafeToSpawn
 .IMPORT Link_HandleInput
 .IMPORT MaskCurPpuMaskGrayscale
+.IMPORT SetupObjRoomBounds
 .IMPORT UpdateDoors
 .IMPORT UpdateMenuAndMeters
 .IMPORT UpdateMode10Stairs_Full
@@ -1546,7 +1546,7 @@ RunCrossRoomTasksAndBeginUpdateMode_PlayModesNoCellar:
     ;
     LDA #$05
     JSR SwitchBank
-    JSR _SetupObjRoomBounds
+    JSR SetupObjRoomBounds
 RunCrossRoomTasksAndBeginUpdateMode_EnterPlayModes:
     ; Called in modes 4, 5, 9, $B, $C.
     ;

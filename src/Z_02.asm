@@ -589,8 +589,8 @@ AnimateDemoPhase0Subphase0:
     LDA FrameCounter
     AND #$01                    ; The timer is incremented every other frame.
     BEQ @SkipTimer
-    INC DemoPhase0Subphase0Timer
-    LDA DemoPhase0Subphase0Timer
+    INC DemoTimer
+    LDA DemoTimer
     BNE @SkipTimer
     JMP IncSubphase             ; Go advance the demo subphase and return.
 
@@ -627,8 +627,8 @@ AnimateDemoPhase1Subphase0:
     RTS
 
 AnimateDemoPhase1Subphase1:
-    INC DemoPhase0Subphase0Timer
-    LDA DemoPhase0Subphase0Timer
+    INC DemoTimer
+    LDA DemoTimer
     BNE :+
     INC DemoSubphase            ; Go to the next subphase.
 :
@@ -992,20 +992,20 @@ AnimateDemoStoryFinalItems:
     RTS
 
 AnimateDemoPhase1Subphase3:
-    INC DemoPhase0Subphase0Timer    ; Delay about 256 frames.
-    LDA DemoPhase0Subphase0Timer
+    INC DemoTimer               ; Delay about 256 frames.
+    LDA DemoTimer
     BNE AnimateDemoPhase1End_AnimateObjects
     INC DemoSubphase
     RTS
 
 AnimateDemoPhase1Subphase4:
-    INC DemoPhase0Subphase0Timer    ; Delay 56 frames.
-    LDA DemoPhase0Subphase0Timer
+    INC DemoTimer               ; Delay 56 frames.
+    LDA DemoTimer
     CMP #$39
     BNE AnimateDemoPhase1End_AnimateObjects
     LDA #$00                    ; Go to phase 0 again, and initialize it.
     STA IsUpdatingMode
-    STA DemoPhase0Subphase0Timer
+    STA DemoTimer
     STA DemoPhase
     STA DemoSubphase
     RTS
@@ -1255,7 +1255,7 @@ DemoPhase0Subphase1Delays:
     .BYTE $04, $04
 
 AnimateDemoPhase0Subphase1:
-    LDA _DemoPhase0Subphase1Timer    ; When subphase timer expires,
+    LDA DemoPhase0Subphase1Timer    ; When subphase timer expires,
     BNE @UpdateAnimation        ; go update animation only.
     ; Calculate the address to the palette to transfer.
     ; Addr = DemoPhase0Subphase1Palettes + (DemoPhase0Subphase1Palettes * $20)
@@ -1294,8 +1294,8 @@ AnimateDemoPhase0Subphase1:
     ; Set the timer to the delay for the current point in the cycle.
     ;
     LDY DemoPhase0Subphase1Cycle
-    LDA $9B68, Y
-    STA _DemoPhase0Subphase1Timer
+    LDA DemoPhase0Subphase1Delays-1, Y
+    STA DemoPhase0Subphase1Timer
     CPY #$0E
     BCC @UpdateAnimation        ; If we reached the end of the cycle,
     ; Advance to the next demo phase.
@@ -1305,7 +1305,7 @@ AnimateDemoPhase0Subphase1:
     STA DemoSubphase
     STA IsUpdatingMode          ; We have to initialize the new demo phase.
 @UpdateAnimation:
-    DEC _DemoPhase0Subphase1Timer
+    DEC DemoPhase0Subphase1Timer
     JSR UpdateWaterfallAnimation
     RTS
 

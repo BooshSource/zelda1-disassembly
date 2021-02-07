@@ -2340,11 +2340,11 @@ CheckPassiveTileObjects:
     LDX #$00                    ; Restore player index in X.
     RTS
 
-_RupeeStashXs:
+RupeeStashXs:
     .BYTE $78, $70, $80, $60, $70, $80, $90, $70
     .BYTE $80, $78
 
-_RupeeStashYs:
+RupeeStashYs:
     .BYTE $70, $80, $80, $90, $90, $90, $90, $A0
     .BYTE $A0, $B0
 
@@ -2364,13 +2364,9 @@ InitRupeeStash_Full:
     JSR InitOneSimpleObject
     ; Look up and set the coordinates for one rupee stash/rupee.
     ;
-    ; MULTI: A2CE-1
-    ;
-    LDA $A2CD, X
+    LDA RupeeStashXs-1, X
     STA ObjX, X
-    ; MULTI: A2D8-1
-    ;
-    LDA _RupeeStashXs+9, X
+    LDA RupeeStashYs-1, X
     STA ObjY, X
     DEX
     BNE @LoopRupee
@@ -2475,8 +2471,7 @@ UpdateTrap_Full:
     ; If the direction we determined is not allowed for this trap, then
     ; go draw and check collisions.
     ;
-    ; MULTI: A344-1
-    AND $A343, X
+    AND TrapAllowedDirs-1, X
     BEQ @DrawAndCheckCollisions
     ; Advance to state 1 with q-speed $70 (1.75 pixels a frame) (fast).
     ;
@@ -3979,7 +3974,7 @@ WieldCandle:
     LDA #$01
     STA UsedCandle
     ; Reset the new fire object's movement info.
-    ; Set quarter speed (q-speed) to $20 (half a pixel a second).
+    ; Set quarter speed (q-speed) to $20 (half a pixel a frame).
     ;
     LDA #$00
     STA ObjGridOffset, X

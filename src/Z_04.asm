@@ -1453,7 +1453,7 @@ Gel_Move:
 @State0:
     ; State 0.
     ;
-    ; Immediately go to state 1 with QSpeed $20 (half a pixel a second),
+    ; Immediately go to state 1 with QSpeed $20 (half a pixel a frame),
     ; and 5 frame timer.
     ;
     LDA #$20
@@ -8094,7 +8094,7 @@ Manhandla_Move:
     ;
     ; Let's say the 16-bit speed is $0140. If we only took the high
     ; byte to add to the coordinates, then the effective speed would
-    ; be 1 pixel a second instead of 1.25.
+    ; be 1 pixel a frame instead of 1.25.
     ;
     ; By keeping a speed accumulator, we can turn speed $0140
     ; into 1.25 pixels a frame over four frames, using this calculation:
@@ -11304,7 +11304,7 @@ UpdateItem:
     ; Set Link's location to this object's.
     ;
     LDY $0D
-    LDX $B0F7, Y                ; TODO: (use ItemTakerObjSlots-1)
+    LDX ItemTakerObjSlots-1, Y
     LDA ObjX, X
     STA ObjX
     LDA ObjY, X

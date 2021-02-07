@@ -118,7 +118,6 @@ ScrolledLineCount := $41B
 DemoLineTileVramAddrLo := $41C
 DemoLineTileVramAddrHi := $41D
 _Multi_041F := $41F
-_TitleWaveYs := $420
 StillHoldingButton := $426
 HeldButton := $427
 SubsequentButtonRepeat := $428

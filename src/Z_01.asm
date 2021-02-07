@@ -404,9 +404,9 @@ DrawCaveItems:
     ; Loop over the wares to draw, from 2 to 0, indexed by [0421].
     ;
     LDA #$02
-    STA _TitleWaveYs+1
+    STA $0421
 @LoopWare:
-    LDX _TitleWaveYs+1
+    LDX $0421
     ; Look up and set the X coordinate for the current item.
     ;
     LDA CaveWareXs, X
@@ -428,7 +428,7 @@ DrawCaveItems:
 @NextWare:
     ; Bottom of the item drawing loop. Decrement this index until < 0.
     ;
-    DEC _TitleWaveYs+1
+    DEC $0421
     BPL @LoopWare
 @ShowPriceRupee:
     ; If the cave flags do not call for showing prices, then return.

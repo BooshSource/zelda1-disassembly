@@ -2944,7 +2944,7 @@ WieldBoomerang:
     ;
     LDY InvMagicBoomerang
     LDA BoomerangLimits, Y
-    STA _ObjMovingLimit, X
+    STA ObjMovingLimit, X
     ; Set up the boomerang.
     ; QSpeed = $C0 (3 pixels a frame)
     ;
@@ -7141,7 +7141,7 @@ InitLinkSpeed:
     CMP ObjQSpeedFrac
     BEQ @SetSpeed               ; If Link's speed is not this lower speed,
     LDA #$00                    ; then reset the position fraction.
-    STA _ObjPosFrac
+    STA ObjPosFrac
 @SetSpeed:
     LDA $00
     STA ObjQSpeedFrac

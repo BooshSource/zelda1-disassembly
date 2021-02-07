@@ -3899,10 +3899,10 @@ UpdateArrowOrBoomerang:
     ;
     ; In major state $30, ObjMovingLimit is a timer to change the state to $40.
     ;
-    CMP _ObjMovingLimit, X
+    CMP ObjMovingLimit, X
     BCC @AnimateBoomerang
     LDA #$10
-    STA _ObjMovingLimit, X
+    STA ObjMovingLimit, X
     LDA #$20
     STA ObjState, X
 @HandleBlocked:
@@ -4088,7 +4088,7 @@ CheckState30:
     ; Decrement timer ObjMovingLimit. Once it reaches 0, change
     ; state to $40.
     ;
-    DEC _ObjMovingLimit, X
+    DEC ObjMovingLimit, X
     BNE @AnimateBoomerang
 @SetState40:
     ; Set state $40, and a time to move of $20 frames.
@@ -4098,7 +4098,7 @@ CheckState30:
     ; Also, animate, draw, and handle any collision (with Link, if a monster's boomerang).
     ;
     LDA #$20
-    STA _ObjMovingLimit, X
+    STA ObjMovingLimit, X
     LDA #$40
     STA ObjState, X
 @AnimateBoomerang:
@@ -4130,7 +4130,7 @@ CheckState30:
     ; If this is a monster's boomerang, go handle the monster catching it.
     ;
     LDA #$00
-    STA _ObjMovingLimit, X
+    STA ObjMovingLimit, X
     CPX #$0D
     BCC @CatchBoomerang
     ; Link has caught the boomerang.

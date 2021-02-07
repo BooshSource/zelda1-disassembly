@@ -595,7 +595,7 @@ L_Walker_SetInputDirAndTryShootingBoomerang:
     ; For boomerangs, move up to $51 pixels (horizontally or vertically).
     ;
     LDA #$51
-    STA _ObjMovingLimit, Y
+    STA ObjMovingLimit, Y
     ; Make it autonomous (ready to update on its own).
     ;
     LDA #$00
@@ -1080,11 +1080,11 @@ UpdateFireball:
 Fireball_MoveOneAxis:
     STA ObjQSpeedFrac, X
     TYA
-    STA _ObjPosFrac, X
+    STA ObjPosFrac, X
     JSR MoveObject
     ; Return the updated position fraction.
     ;
-    LDA _ObjPosFrac, X
+    LDA ObjPosFrac, X
     RTS
 
 InitBubble:
@@ -1988,7 +1988,7 @@ _TryShooting:
     BEQ @TryShootingNow
     CMP #$0A                    ; Blue fast octorock
     BEQ @TryShootingNow
-    LDA _ObjShootTimer, X
+    LDA ObjShootTimer, X
     BNE @TryShootingNow
     ; and a random value < $F8, then return.
     ;
@@ -2027,7 +2027,7 @@ _TryShooting:
     BNE @SetShootTimer
     ; then Y := shoot timer - 1
     ;
-    LDY _ObjShootTimer, X
+    LDY ObjShootTimer, X
     DEY
     ; If Y register < 0, then shoot timer is 0.
     ; So, if "wants to shoot" flag is set, then set shoot timer to $30.
@@ -2041,7 +2041,7 @@ _TryShooting:
     ; shoot timer := Y
     ;
     TYA
-    STA _ObjShootTimer, X
+    STA ObjShootTimer, X
     ; If new shoot timer = 0, go set a non-zero speed.
     ;
     BEQ @SetSpeed
@@ -4688,7 +4688,7 @@ UpdateStalfos:
     ;
     ; If shoot timer = 0 and Random < $F8, then return.
     ;
-    LDA _ObjShootTimer, X
+    LDA ObjShootTimer, X
     BNE @PrepareToShoot
     LDA Random, X
     CMP #$F8
@@ -4703,7 +4703,7 @@ UpdateStalfos:
     BNE @SetShootTimer
     ; If shoot timer >= 1, then decrement and go set shoot timer.
     ;
-    LDY _ObjShootTimer, X
+    LDY ObjShootTimer, X
     DEY
     BPL @SetShootTimer
     ; If stalfos does not want to shoot, then go set the qspeed.
@@ -4718,7 +4718,7 @@ UpdateStalfos:
     LDY #$30
 @SetShootTimer:
     TYA
-    STA _ObjShootTimer, X
+    STA ObjShootTimer, X
     ; If shoot timer = 0, then we're not shooting.
     ; Go set the qspeed.
     ;

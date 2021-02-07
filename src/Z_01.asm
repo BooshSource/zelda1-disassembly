@@ -2463,7 +2463,7 @@ UpdateTrap_Full:
     ;
     LDA ObjX, X
 @GoToState1:
-    STA _ObjMovingLimit, X
+    STA ObjMovingLimit, X
     ; Set facing direction to the horizontal one that we determined.
     ;
     TYA
@@ -2577,7 +2577,7 @@ UpdateTrap_Full:
     ; If the current coordinate = original coordinate, then go to state 0.
     ;
     TYA
-    CMP _ObjMovingLimit, X
+    CMP ObjMovingLimit, X
     BNE L_Trap_DrawAndCheckCollisions
     LDA #$00
     STA ObjState, X
@@ -3470,10 +3470,10 @@ BoundByRoom:
 ; C: 1 if fractional position reached a whole pixel
 ;
 AddQSpeedToPositionFraction:
-    LDA _ObjPosFrac, X
+    LDA ObjPosFrac, X
     CLC
     ADC ObjQSpeedFrac, X
-    STA _ObjPosFrac, X
+    STA ObjPosFrac, X
     PHP                         ; Save carry flag.
     ; Don't let positions go past the limits
     ; If we're at a limit, then clear carry.
@@ -3506,10 +3506,10 @@ AddQSpeedToPositionFraction:
 ; C: 0 if fractional position reached a whole pixel
 ;
 SubQSpeedFromPositionFraction:
-    LDA _ObjPosFrac, X
+    LDA ObjPosFrac, X
     SEC
     SBC ObjQSpeedFrac, X
-    STA _ObjPosFrac, X
+    STA ObjPosFrac, X
     PHP                         ; Save carry flag.
     ; Don't let positions go past the limits
     ; If we're at a limit, then set carry.
@@ -3764,7 +3764,7 @@ SetBoomerangSpeed:
     ; Once we've traveled the target amount of time, set state $50 to go faster.
     ; In major state $40, ObjMovingLimit is a timer to change the state to $50.
     ;
-    DEC _ObjMovingLimit, X
+    DEC ObjMovingLimit, X
     BNE @Exit
     LDA #$50
     STA ObjState, X
@@ -3978,7 +3978,7 @@ WieldCandle:
     ;
     LDA #$00
     STA ObjGridOffset, X
-    STA _ObjPosFrac, X
+    STA ObjPosFrac, X
     LDA #$20
     STA ObjQSpeedFrac, X
     ; Activate the fire object. Initial state = $21 (moving fire).

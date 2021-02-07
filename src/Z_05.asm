@@ -1,4 +1,5 @@
 .INCLUDE "Variables.inc"
+.INCLUDE "CommonVars.inc"
 
 .SEGMENT "BANK_05_00"
 
@@ -85,14 +86,15 @@
 .IMPORT RunCrossRoomTasksAndBeginUpdateMode_EnterPlayModes
 .IMPORT SetUpAndDrawLinkLiftingItem
 .IMPORT TableJump
-.IMPORT TryUpdateTriforcePositionMarker
 .IMPORT TurnOffAllVideo
 .IMPORT TurnOffVideoAndClearArtifacts
 .IMPORT UpdateHeartsAndRupees
 .IMPORT UpdatePlayer
+.IMPORT UpdateTriforcePositionMarker
 .IMPORT WieldFlute
 
 .EXPORT _SetupObjRoomBounds
+.EXPORT AnimateAndDrawLinkBehindBackground
 .EXPORT CalculateNextRoomForDoor
 .EXPORT ChangePlayMapSquareOW
 .EXPORT CheckBossSoundEffectUW
@@ -107,7 +109,6 @@
 .EXPORT CreateRoomObjects
 .EXPORT DrawItemInInventoryWithX
 .EXPORT DrawLinkBetweenRooms
-.EXPORT F14BA8
 .EXPORT FetchTileMapAddr
 .EXPORT FindAndSelectOccupiedItemSlot
 .EXPORT FindDoorAttrByDoorBit
@@ -189,7 +190,7 @@ UpdateMenuOW_JumpTable:
 UpdateMenuCommon1:
     JSR HideAllSprites
     JSR UpdatePlayerPositionMarker
-    JSR TryUpdateTriforcePositionMarker
+    JSR UpdateTriforcePositionMarker
     ; Move position markers and hardware vertical scroll position
     ; down 1 pixel.
     ;
@@ -1027,7 +1028,7 @@ FillPlayAreaAttrs:
 
 UpdateMode7SubmodeAndDrawLink:
     JSR UpdateMode7ScrollSubmode
-    JMP Link_EndMoveAndAnimateBetweenRooms    ; TODO: Draw Link?
+    JMP Link_EndMoveAndAnimateBetweenRooms
 
 UpdateMode7ScrollSubmode:
     LDA GameSubmode
@@ -1409,7 +1410,7 @@ InitMode10:
     LDA ObjY
     CLC
     ADC #$10
-    STA _Multi_0412             ; TODO: TargetY
+    STA StairsTargetY
 :
     INC IsUpdatingMode
     RTS
@@ -1628,9 +1629,9 @@ InitMode_EnterRoom:
     BNE :+
     ; Enter method 1-a.
     ;
+    ; Store the Y coordinate that we determined as the Target Y.
     ;
-    ; MULTI: Store the Y coordinate that we determined as the Target Y [0412].
-    STA _Multi_0412
+    STA StairsTargetY
     CLC
     ADC #$10
     STA ObjY                    ; But have Link start walking out from $10 pixels below.
@@ -2077,13 +2078,13 @@ ReturnUnsafeToSpawn:
 InitMode11:
     LDX #$00                    ; Decrease Link's invincibility timer. This is needed in submode 1.
     JSR DecrementInvincibilityTimer
-    JSR Link_EndMoveAndAnimate  ; TODO: draw Link?
+    JSR Link_EndMoveAndAnimate
     LDA GameSubmode
     BNE InitMode11_Sub1         ; Go handle submode 1.
     ; Submode 0.
     ;
     JSR HideAllSprites
-    JSR TryUpdateTriforcePositionMarker
+    JSR UpdateTriforcePositionMarker
     JSR DrawLinkBetweenRooms
     JSR DrawStatusBarItemsAndEnsureItemSelected
     JSR MaskCurPpuMaskGrayscale
@@ -2343,16 +2344,16 @@ UpdateMode10Stairs_Full:
     ;
     LDA FrameCounter
     AND #$03
-    BNE F14BA8                  ; If it's not time to change position, go draw.
+    BNE AnimateAndDrawLinkBehindBackground    ; If it's not time to change position, go draw.
     INC ObjY                    ; Move Link down 1 pixel.
     LDA ObjY
-    CMP _Multi_0412             ; TODO: Here it's the target Y.
-    BNE F14BA8                  ; If Link hasn't reached the end of the walk, go draw.
+    CMP StairsTargetY
+    BNE AnimateAndDrawLinkBehindBackground    ; If Link hasn't reached the end of the walk, go draw.
 :
     LDA TargetMode              ; Else go to the target mode.
     STA GameMode
     JSR EndGameMode
-F14BA8:
+AnimateAndDrawLinkBehindBackground:
     JSR Link_EndMoveAndAnimate
 PutLinkBehindBackground:
     LDA Sprites+74              ; Change priority of Link sprites $12 and $13 to show them behind the background.
@@ -2619,7 +2620,7 @@ UpdateMode11Death_Sub4:
 UpdateMode11Death_Sub5:
     LDA #$00
     STA IsSprite0CheckActive
-    LDA #$5E                    ; TODO: Cue transfer of bottom half of background palette for this mode.
+    LDA #$5E                    ; Cue transfer of bottom half of background palette for this mode.
     JMP SelectTransferBufAndAdvanceSubmode    ; Go set this TileBufSelector value, and advance submode.
 
 UpdateMode11Death_Sub6:
@@ -3616,7 +3617,7 @@ SaveKillCountOW:
     LDA ($00), Y                ; Reset kill count part of the room's flags.
     AND #$F8
     STA ($00), Y
-    LDA ObjType                 ; RoomKillCount
+    LDA RoomKillCount
     CMP RoomObjCount
     BCS @LimitCount             ; If RoomKillCount >= RoomFoeCount, go store the max kill count.
     AND #$07                    ; Limit RoomKillCount to 7.
@@ -4069,7 +4070,7 @@ SaveKillCountUW:
     STA ($00), Y
     LDA RoomObjCount
     BEQ @StoreMax               ; If no monsters were made in this room, go store the max kill count.
-    LDA ObjType                 ; RoomKillCount
+    LDA RoomKillCount
     BEQ :+                      ; If RoomKillCount = 0, go compare it to RoomFoeCount.
     ; If the object template type is ...
     ; >= $32 and
@@ -6473,7 +6474,7 @@ InitMode6:
     JSR SaveKillCount
     LDA CurLevel
     BEQ @SetWalkDistance0
-    JSR GetPassedDoorType       ; TODO: get door attribute in direction we're facing
+    JSR GetPassedDoorType       ; Get door type in direction we're facing
     ; If the door attribute is "false wall",
     ; then play the "found secret" tune.
     PHA
@@ -6710,7 +6711,7 @@ InitMode9_EnterCellar:
     ;
     LDY RoomId
     LDX #$00
-    LDA CellarEnteredRoomId
+    LDA CellarSourceRoomId
     CMP LevelBlockAttrsA, Y
     BEQ :+
     INX
@@ -6920,8 +6921,6 @@ Link_HandleInput:
     JSR Link_FilterInput
     ; If the sword is not blocked, then handle the sword if A is pressed.
     ;
-    ;
-    ; SwordBlockedTimer
     LDA SwordBlockedLongTimer
     ORA SwordBlocked
     BNE :+
@@ -7225,7 +7224,7 @@ SetLinkInputDir:
     ; Reverse the grid offset. Yield an offset for the same position
     ; in the line, but in the opposite direction. For example,
     ; -1 => 7
-    ; 3 => -5
+    ;  3 => -5
     ;
     ; Positive offset: -8 - -offset
     ; Negative offset:  8 - -offset
@@ -7298,7 +7297,7 @@ CheckWarps:
     ;
     JSR SaveKillCount
     LDA RoomId
-    STA CellarEnteredRoomId     ; Remember what room we were in.
+    STA CellarSourceRoomId      ; Remember what room we were in.
     ; Look for a room in cellar array that has the current room as
     ; destination room A or B.
     ;
@@ -7400,7 +7399,7 @@ HandleWarpOW:
     LSR
     STA CurLevel
     LDA RoomId
-    STA CaveEnteredRoomId       ; Remember where we came from.
+    STA CaveSourceRoomId        ; Remember where we came from.
     LDA #$02                    ; Target mode is 2 to load a level.
     BNE SetTargetMode
 ; Returns:
@@ -7526,7 +7525,7 @@ EndGameMode12:
     LDA #$02
     STA GameMode
     STA UndergroundExitType     ; Set to type 2: dungeon level.
-    LDA #$80                    ; TODO: ?
+    LDA #$80                    ; Silence the song.
     STA Tune0Request
 MaskCurPpuMaskGrayscale:
     LDA CurPpuMask_2001
@@ -7841,7 +7840,7 @@ DrawSubmenuItems:
     DEX
     CPX #$1C
     BNE :-
-    BEQ @DrawOtherItems         ; If don't find either, skip drawing a boomerang.
+    BEQ @DrawOtherItems         ; If you don't find either, skip drawing a boomerang.
 @FoundBoomerang:
     LDA #$36
     STA $01                     ; [01] Y

@@ -232,7 +232,7 @@ PlayStairsSfx:
     STA EffectCounter
 :
     LDA #$0D
-    STA $68
+    STA $68                     ; The sound of one step lasts $C frames.
 ContinueStairsSfx:
     DEC $68
     LDY $68
@@ -333,7 +333,7 @@ DriveEffect:
     LDA #$D0
     STA SeaSfxCounter
     LDA #$10
-    STA $68
+    STA $68                     ; The volume begins and ends at $10.
 @ContinueSeaSfx:
     LDA SeaSfxCounter
     CMP #$BF

@@ -1,4 +1,5 @@
 .INCLUDE "Variables.inc"
+.INCLUDE "CommonVars.inc"
 
 .SEGMENT "BANK_07_00"
 
@@ -194,6 +195,7 @@
 ; Imports from program bank 05
 
 .IMPORT _SetupObjRoomBounds
+.IMPORT AnimateAndDrawLinkBehindBackground
 .IMPORT CalculateNextRoomForDoor
 .IMPORT ChangePlayMapSquareOW
 .IMPORT CheckBossSoundEffectUW
@@ -207,7 +209,6 @@
 .IMPORT CreateRoomObjects
 .IMPORT DrawItemInInventoryWithX
 .IMPORT DrawLinkBetweenRooms
-.IMPORT F14BA8
 .IMPORT FetchTileMapAddr
 .IMPORT FindAndSelectOccupiedItemSlot
 .IMPORT FindDoorAttrByDoorBit
@@ -319,13 +320,13 @@
 .EXPORT SetTypeAndClearObject
 .EXPORT SetUpAndDrawLinkLiftingItem
 .EXPORT TableJump
-.EXPORT TryUpdateTriforcePositionMarker
 .EXPORT TurnOffAllVideo
 .EXPORT TurnOffVideoAndClearArtifacts
 .EXPORT UpdateArrowOrBoomerang
 .EXPORT UpdateDeadDummy
 .EXPORT UpdateHeartsAndRupees
 .EXPORT UpdatePlayer
+.EXPORT UpdateTriforcePositionMarker
 .EXPORT Walker_Move
 .EXPORT WieldFlute
 
@@ -706,7 +707,7 @@ ReadOneController:
     STA ButtonsDown, X
     RTS
 
-TryUpdateTriforcePositionMarker:
+UpdateTriforcePositionMarker:
     LDA CurLevel
     BEQ Exit                    ; If in OW, then return.
     LDA #$05
@@ -770,7 +771,7 @@ GetRoomFlags:
     LDA ($00), Y
     RTS
 
-PlaceRoomItemOnMonster:
+AnimateRoomItemOnMonster:
     ; Put room item object where the first monster is.
     ;
     LDA ObjX+1
@@ -804,11 +805,11 @@ MoveAndDrawRoomItem:
     LDX #$01
     LDA ObjType+1
     CMP #$17                    ; Like-Like
-    BEQ PlaceRoomItemOnMonster
+    BEQ AnimateRoomItemOnMonster
     CMP #$2A                    ; Stalfos
-    BEQ PlaceRoomItemOnMonster
+    BEQ AnimateRoomItemOnMonster
     CMP #$30                    ; Gibdo
-    BEQ PlaceRoomItemOnMonster
+    BEQ AnimateRoomItemOnMonster
     ; A monster is not carrying the item. So draw the item as usual.
     ;
     ;
@@ -827,9 +828,9 @@ AnimateItemObject:
     ; If the lifetime timer of the item >= $F0 and even, then
     ; return without drawing. This makes it flash at first.
     ;
+    ; [03A8][X] is used to count down the life of the item.
     ;
-    ; MULTI: ObjPosFrac [03A8][X] is used to count down the life of the item.
-    LDA _ObjPosFrac, X
+    LDA Item_ObjItemLifetime, X
     CMP #$F0
     BCC :+
     LSR
@@ -1411,17 +1412,17 @@ SaveSlotToPaletteRowOffset:
 InitMode3_Sub1:
     LDA CurLevel
     BNE @UseStartRoomId         ; If in UW, then go set room ID to StartRoomId.
-    LDA CaveEnteredRoomId
+    LDA CaveSourceRoomId
     CMP #$FF
     BNE @SetRoomId              ; If it's set to a valid room ID, then start there.
 @UseStartRoomId:
     LDA LevelInfo_StartRoomId
 @SetRoomId:
     STA RoomId
-    CMP CaveEnteredRoomId
+    CMP CaveSourceRoomId
     BNE PatchAndCueLevelPalettesTransferAndAdvanceSubmode    ; If CaveEnteredRoomId was valid,
     LDA #$FF                    ; then keep CaveEnteredRoomId invalid by default.
-    STA CaveEnteredRoomId
+    STA CaveSourceRoomId
 PatchAndCueLevelPalettesTransferAndAdvanceSubmode:
     LDX CurSaveSlot
     LDY SaveSlotToPaletteRowOffset, X
@@ -1440,7 +1441,7 @@ PatchAndCueLevelPalettesTransferAndAdvanceSubmode:
 DrawSpritesBetweenRooms:
     JSR HideAllSprites
     JSR UpdatePlayerPositionMarker
-    JSR TryUpdateTriforcePositionMarker
+    JSR UpdateTriforcePositionMarker
     LDA #$05
     JSR SwitchBank
     JSR DrawLinkBetweenRooms
@@ -1755,7 +1756,7 @@ StepOutside:
     ;
     LDA #$05
     JSR SwitchBank
-    JSR F14BA8                  ; TODO: ?
+    JSR AnimateAndDrawLinkBehindBackground
     ; Every 4 frames, move Link up 1 pixel.
     ;
     LDA FrameCounter
@@ -1763,7 +1764,7 @@ StepOutside:
     BNE @Exit
     DEC ObjY
     LDA ObjY
-    CMP _Multi_0412             ; MULTI: TargetY
+    CMP StairsTargetY
     BEQ GoToNextModePlayLevelSong    ; If Link has reached the target position, go finish the mode.
 @Exit:
     RTS
@@ -1881,15 +1882,13 @@ BeginUpdateWorld:
     ; If it's not time to change the chase target, then
     ; skip this and go update objects.
     ;
-    ;
-    ; TODO: name
-    LDA ObjStunTimer+13
+    LDA ChaseLongTimer
     BNE @LoopObject
     ; Set the chase long-timer to a random value between 0 and 7.
     ;
     LDA Random+1
     AND #$07
-    STA ObjStunTimer+13
+    STA ChaseLongTimer
     ; Switch the flag indicating whether Link is the target.
     ; If the value is 0 (Link *is* the target), then
     ; skip this and go update objects.
@@ -1983,7 +1982,7 @@ BeginUpdateWorld:
     LDA #$04
     JSR SwitchBank
     JSR UpdateStatues           ; Update statues.
-    JSR TryUpdateTriforcePositionMarker
+    JSR UpdateTriforcePositionMarker
     LDA #$05
     JSR SwitchBank
     JSR CheckUnderworldSecrets
@@ -3156,6 +3155,9 @@ Link_EndMoveAndDraw_Bank4:
     JMP SwitchBank
 
 Link_EndMoveAndDraw:
+    ; Description:
+    ; Draw Link without animating by keeping the animation counter fixed.
+    ;
     LDA #$06
     STA ObjAnimCounter
     BNE Link_EndMoveAndAnimate
@@ -4113,7 +4115,7 @@ CheckState30:
     ;
     CPX #$0D
     BCS :+
-    LDA _Multi_042C, X          ; Monster thrower object index
+    LDA ObjRefId, X             ; Monster thrower object index
 :
     JSR GetDirectionsAndDistancesToTarget
     ; If the boomerang hasn't reached the thrower ([00] < 2),
@@ -4174,7 +4176,7 @@ CheckState30:
     LDY #$70
 @SetThrowerTimer:
     TYA
-    LDY _Multi_042C, X
+    LDY ObjRefId, X
     STA a:ObjTimer, Y
     ; Reset the thrower's state to make it idle or restart its state machine.
     ; Destroy the monster's boomerang.
@@ -4211,8 +4213,6 @@ CheckState30:
     STA ObjDir, X
     JSR MoveObject
 AnimateBoomerangAndCheckCollision:
-    ; TODO: is the sound effect part right?
-    ;
     ; Decrement animation counter; and when it reaches 0:
     ; 1. arm it again for 2 frames
     ; 2. advance the minor state within a cycle of 8
@@ -5432,7 +5432,7 @@ UpdateMetaObjectEnd:
     ; a dropped item.
     ;
     LDA ObjType, X
-    STA _Multi_0412, X          ; TODO: DASM.EXPR: Item_ObjMonsterType
+    STA Item_ObjMonsterType, X
     ; Certain objects don't advance the world kill cycle.
     ;
     CMP #$5D
@@ -5453,12 +5453,10 @@ UpdateMetaObjectEnd:
     STA WorldKillCycle
     ; If the object is not a zora, then increase room kill count.
     ;
-    ;
-    ; MULTI: RoomKillCount
     LDA ObjType, X
     CMP #$11                    ; Zora
     BEQ @DropItem
-    INC ObjType
+    INC RoomKillCount
 @DropItem:
     ; Turn this object into a dropped item.
     ;

@@ -200,7 +200,7 @@ InitMonsterShot:
 _InitMonsterShot_Unknown54:
     LDA #$E0                    ; QSpeed $E0 (3.5 pixels a frame)
 :
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     JMP ResetObjMetastate
 
 ; Unknown block
@@ -314,7 +314,7 @@ Exit:
     ; If speed = 0, or the object is between squares;
     ; then go set input direction to facing direction.
     ;
-    LDA _ObjQSpeedFrac, X
+    LDA ObjQSpeedFrac, X
     BEQ @SetInputDir
     LDA ObjGridOffset, X
     AND #$0F
@@ -442,7 +442,7 @@ UpdateGoriya:
 @AfterMove:
     ; If speed = 0 or is between squares, then go try shooting.
     ;
-    LDA _ObjQSpeedFrac, X
+    LDA ObjQSpeedFrac, X
     BEQ L_Walker_SetInputDirAndTryShootingBoomerang
     LDA ObjGridOffset, X
     AND #$0F
@@ -591,7 +591,7 @@ L_Walker_SetInputDirAndTryShootingBoomerang:
     ; Fly at q-speed $A0 (2.5 pixels a frame).
     ;
     LDA #$A0
-    STA _ObjQSpeedFrac, Y
+    STA ObjQSpeedFrac, Y
     ; For boomerangs, move up to $51 pixels (horizontally or vertically).
     ;
     LDA #$51
@@ -1078,7 +1078,7 @@ UpdateFireball:
 ; Load the q-speed and position fraction from the parameters.
 ;
 Fireball_MoveOneAxis:
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     TYA
     STA _ObjPosFrac, X
     JSR MoveObject
@@ -1089,7 +1089,7 @@ Fireball_MoveOneAxis:
 
 InitBubble:
     LDA #$40                    ; QSpeed $40 (1 pixel a frame)
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     JMP InitWalker
 
 InitBlueKeese:
@@ -1457,7 +1457,7 @@ Gel_Move:
     ; and 5 frame timer.
     ;
     LDA #$20
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     LDA #$05
     STA ObjTimer, X
     INC ObjState, X
@@ -1473,7 +1473,7 @@ Gel_Move:
 ; A: qspeed
 ;
 UpdateNormalZolOrGel:
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; If object timer >= 5, then return.
     ;
     LDA ObjTimer, X
@@ -1525,7 +1525,7 @@ ZolGelDelays:
 ;
 Gel_MoveSplitting:
     LDA #$FF
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; Set moving direction to facing direction.
     ;
     LDA ObjDir, X
@@ -1874,7 +1874,7 @@ InitFastOctorock:
     ;
     LDA #$30
 :
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; Octorock spawn clouds last longer than other monsters.
     ; Set object timer to ((object slot + 1) * $10).
     ;
@@ -2075,7 +2075,7 @@ _TryShooting:
     ; Set the speed to whatever was determined: 0 or the value passed in [01].
     ;
     PLA
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
 @Exit:
     RTS
 
@@ -2106,7 +2106,7 @@ UpdateMonsterArrow:
     ; Set q-speed $80 (2 pixels a frame).
     ;
     LDA #$80
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; If the timer has not expired, then go draw,
     ; and see if the shooter's still alive.
     ;
@@ -2643,7 +2643,7 @@ UpdateBurrower:
     ;
     TAY
     LDA BlueLeeverStateQSpeeds, Y
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     LDA BlueLeeverStateTimes, Y
     STA ObjTimer, X
 @Animate:
@@ -2953,7 +2953,7 @@ RedLeever_CycleStateDrawAndCheckCollisions:
     ;
     TAY
     LDA RedLeeverStateQSpeeds, Y
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     LDA RedLeeverStateTimes, Y
     STA ObjTimer, X
 RedLeever_AnimateAndCheckCollisions:
@@ -3269,7 +3269,7 @@ InitArmosOrFlyingGhini:
     BCC :+
     LDA #$60
 :
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
 @FinishInit:
     ; Facing and input directions down.
     ;
@@ -4242,7 +4242,7 @@ UpdateWallmaster:
     LDA #$60
     STA ObjTimer+1
     LDA #$18
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     LDA #$08
     STA ObjAnimCounter, X
     ; Reset grid offset, tiles crossed, and movement frame.
@@ -4573,7 +4573,7 @@ UpdateRope:
     ; set timer to a random value up to $3F, and turn to face
     ; an unblocked direction.
     ;
-    LDA _ObjQSpeedFrac, X
+    LDA ObjQSpeedFrac, X
     CMP #$60
     BEQ @CheckSpeed
     LDA ObjTimer, X
@@ -4589,11 +4589,11 @@ UpdateRope:
     CMP ObjDir, X
     BEQ :+
     LDA #$20
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
 :
     ; If qspeed <> $20 or grid offset <> 0, then go draw.
     ;
-    LDA _ObjQSpeedFrac, X
+    LDA ObjQSpeedFrac, X
     CMP #$20
     BNE @Animate
     LDA ObjGridOffset, X
@@ -4622,7 +4622,7 @@ UpdateRope:
     ; Make the rope rush (qspeed $60).
     ;
     LDA #$60
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
 @Animate:
     LDA #$0A                    ; Animation counter $A
     JSR Anim_AdvanceAnimCounterAndSetObjPosForSpriteDescriptor
@@ -4760,7 +4760,7 @@ UpdateStalfos:
     PHA
 @SetSpeed:
     PLA                         ; Pop and set the qspeed (0 or the speed for stalfos).
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
 @Exit:
     RTS
 
@@ -6464,7 +6464,7 @@ InitDarknut:
     ;
     LDA #$28
 :
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     JMP InitWalker
 
 UpdateGibdo:
@@ -11945,7 +11945,7 @@ RotateObjectLocation:
     ;
     ; Q-speed has the default value $20 set when entering the room.
     ;
-    LDA _ObjQSpeedFrac, X
+    LDA ObjQSpeedFrac, X
     LDY $05
     JSR ShiftMultiply
     ; The absolute X increment for the current angle is now in [02:03].
@@ -11996,7 +11996,7 @@ RotateObjectLocation:
     STA $00
     ; Multiply q-speed by [00].
     ;
-    LDA _ObjQSpeedFrac, X
+    LDA ObjQSpeedFrac, X
     LDY $06
     JSR ShiftMultiply
     ; The absolute Y increment for the current angle is now in [02:03].

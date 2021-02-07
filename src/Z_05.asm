@@ -1725,7 +1725,7 @@ InitMode_EnterRoom:
     INC ObjAnimCounter, X       ; TODO: INC?
     INC ObjMetastate, X         ; By default, objects start in metastate 1 (first cloud state).
     LDA #$20                    ; Set the default speed.
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     DEX
     BNE :-
     ; Put the monster list ID in [02].
@@ -2953,7 +2953,7 @@ WieldBoomerang:
     ;
     JSR PlaceWeaponForPlayerState
     LDA #$C0
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     LDA #$03
     STA ObjAnimCounter, X
     ; See PlaceWeaponForPlayerStateAndAnim for the reason
@@ -3008,7 +3008,7 @@ WieldWeapon:
     ; Set q-speed $C0 (3 pixels a frame).
     ;
     LDA #$C0
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     JSR PlaceWeaponForPlayerStateAndAnim
     ; If the direction is vertical, move the object right 3 pixels.
     ;
@@ -7138,13 +7138,13 @@ InitLinkSpeed:
 :
     LDA #$30
     STA $00
-    CMP _ObjQSpeedFrac
+    CMP ObjQSpeedFrac
     BEQ @SetSpeed               ; If Link's speed is not this lower speed,
     LDA #$00                    ; then reset the position fraction.
     STA _ObjPosFrac
 @SetSpeed:
     LDA $00
-    STA _ObjQSpeedFrac
+    STA ObjQSpeedFrac
 :
     RTS
 

@@ -2477,7 +2477,7 @@ UpdateTrap_Full:
     ;
     INC ObjState, X
     LDA #$70
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
 @DrawAndCheckCollisions:
     JMP L_Trap_DrawAndCheckCollisions
 
@@ -2566,7 +2566,7 @@ UpdateTrap_Full:
     JSR GetOppositeDir
     STA ObjDir, X
     LDA #$20
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     INC ObjState, X
 @Draw:
     JMP L_Trap_DrawAndCheckCollisions
@@ -3472,7 +3472,7 @@ BoundByRoom:
 AddQSpeedToPositionFraction:
     LDA _ObjPosFrac, X
     CLC
-    ADC _ObjQSpeedFrac, X
+    ADC ObjQSpeedFrac, X
     STA _ObjPosFrac, X
     PHP                         ; Save carry flag.
     ; Don't let positions go past the limits
@@ -3508,7 +3508,7 @@ AddQSpeedToPositionFraction:
 SubQSpeedFromPositionFraction:
     LDA _ObjPosFrac, X
     SEC
-    SBC _ObjQSpeedFrac, X
+    SBC ObjQSpeedFrac, X
     STA _ObjPosFrac, X
     PHP                         ; Save carry flag.
     ; Don't let positions go past the limits
@@ -3751,7 +3751,7 @@ _CalcDiagonalSpeedIndex:
 ; A: q-speed fraction
 ;
 SetBoomerangSpeed:
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; If in major state $50, use this speed as is.
     ;
     LDA ObjState, X
@@ -3760,7 +3760,7 @@ SetBoomerangSpeed:
     BNE @Exit
     ; Else, in major state $40, go at half the speed.
     ;
-    LSR _ObjQSpeedFrac, X
+    LSR ObjQSpeedFrac, X
     ; Once we've traveled the target amount of time, set state $50 to go faster.
     ; In major state $40, ObjMovingLimit is a timer to change the state to $50.
     ;
@@ -3980,7 +3980,7 @@ WieldCandle:
     STA ObjGridOffset, X
     STA _ObjPosFrac, X
     LDA #$20
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; Activate the fire object. Initial state = $21 (moving fire).
     ;
     LDA #$21

@@ -4069,7 +4069,7 @@ CheckState30:
     ; Go slow at q-speed fraction $40 (1 pixel a frame).
     ;
     LDA #$40
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; If facing left and X < 2, then go change state to $40. The
     ; boomerang is too close to the left edge of the screen.
     ; Another move might make it wrap around.
@@ -4566,7 +4566,7 @@ SetUpWeaponWithState:
     LDY #$A0
 :
     TYA
-    STA _ObjQSpeedFrac, X
+    STA ObjQSpeedFrac, X
     ; Set the shot object's grid offset the same as the player's.
     ;
     LDA ObjGridOffset

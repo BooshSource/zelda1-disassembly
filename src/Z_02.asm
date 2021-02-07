@@ -561,10 +561,10 @@ InitDemoSubphaseTransferStoryPalette:
     LDX #$0A                    ; Reset variables used in this phase.
     LDA #$00
 @ClearVars:
-    STA _Multi_0412, X
-    STA _Multi_041F, X
-    STA _Multi_0437, X
-    STA _Multi_0444, X
+    STA $0412, X
+    STA $041F, X
+    STA $0437, X
+    STA $0444, X
     DEX
     BPL @ClearVars
     JMP IncSubphase             ; Go to the next subphase and return.

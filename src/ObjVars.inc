@@ -12,6 +12,8 @@ ObjAngleWhole := $394
 Shot_ObjBounceDir := $380
 Shot_ObjBounceDist := $394
 
+TileObjRoomId := $412
+
 Fireball_ObjPosFracX := $451
 Fireball_ObjPosFracY := $45E
 Fireball_ObjDirToTargetX := $412

@@ -2098,7 +2098,7 @@ _ShootIfWanted2:
     BCC L1083E_Exit
     LDA #$80
     STA ObjTimer, X
-    DEC _Multi_0437, X
+    DEC $0437, X
 L1083E_Exit:
     RTS
 
@@ -3620,11 +3620,10 @@ UpdateRockOrGravestone:
     ;
     STA ObjDir, X
     INC ObjState, X
-    ; TODO: ?
     ; Store current room ID.
     ;
     LDA RoomId
-    STA _Multi_0412, X
+    STA TileObjRoomId, X
     ; Change from a gravestone tile to the gray floor tile.
     ; The gravestone object will be drawn above it.
     ;
@@ -3660,7 +3659,7 @@ UpdateRockOrGravestone:
     ;
     LDA RoomId
     PHA
-    LDA _Multi_0412, X
+    LDA TileObjRoomId, X
     STA RoomId
     JSR MarkRoomVisited
     PLA
@@ -3692,7 +3691,7 @@ UpdateRockOrGravestone:
     STA $00
     ; Get the position of the stairs in this room, and set it for the object.
     ;
-    LDY _Multi_0412, X
+    LDY TileObjRoomId, X
     JSR GetShortcutOrItemXYForRoom
     STA ObjX, X
     STY ObjY, X
@@ -4745,7 +4744,7 @@ UpdateStalfos:
     ;
     LDA #$80
     STA ObjTimer, X
-    DEC _Multi_0437, X
+    DEC $0437, X
 @CheckResult:
     ; We jump here if shooting failed. Jump again to set the qspeed.
     ;
@@ -5479,8 +5478,8 @@ Digdogger_Move:
     LDA Digdogger_ObjSpeedFrac, X
     AND #$E0
     CLC                         ; Add the low speed byte to speed accumulator.
-    ADC _Multi_0412, X
-    STA _Multi_0412, X
+    ADC $0412, X
+    STA $0412, X
     ; Assign (high speed byte + carry) to [03].
     ;
     LDA Digdogger_ObjSpeedWhole, X
@@ -5961,7 +5960,7 @@ UpdateDodongoState1_Bloated_Sub_Wait:
     BPL L_Dodongo_DecrementBloatedTimer
     ; Set the bloated timer according to the substate.
     ;
-    LDY _Multi_042C, X
+    LDY Dodongo_ObjBloatedSubstate, X
     LDA DodongoBloatedWaitTimes, Y
     STA Dodongo_ObjBloatedTimer, X
     ; If substate <> 0, go decrement bloated timer.
@@ -8545,7 +8544,7 @@ UpdateGleeokHead:
     ; and there's no object (fireball) in slot $B,
     ; then shoot a fireball $56.
     ;
-    LDA _Multi_0437, X
+    LDA Flyer_ObjDistTraveled, X
     AND #$01
     BNE :+
     LDA Random+1, X
@@ -8570,7 +8569,7 @@ UpdateGleeokHead:
     RTS
 
 ControlGleeokHeadFlight:
-    LDA _Multi_0444, X
+    LDA Flyer_ObjFlyingState, X
     JSR TableJump
 ControlGleeokHeadFlight_JumpTable:
     .ADDR Flyer_SpeedUp
@@ -11959,10 +11958,10 @@ RotateObjectLocation:
     BCC @AddToX
     ; Subtract the product's fraction from the X coordinate fraction.
     ;
-    LDA _Multi_0412, X
+    LDA $0412, X
     SEC
     SBC $02
-    STA _Multi_0412, X
+    STA $0412, X
     ; And subtract the product's whole part from the X coordinate with carry.
     ;
     LDA ObjX, X
@@ -11973,10 +11972,10 @@ RotateObjectLocation:
     ; Else angle < $10. So, the monster is in the bottom half of circle going right.
     ; Add the product's fraction to the X coordinate fraction.
     ;
-    LDA _Multi_0412, X
+    LDA $0412, X
     CLC
     ADC $02
-    STA _Multi_0412, X
+    STA $0412, X
     ; And add the product's whole part to the X coordinate with carry.
     ;
     LDA ObjX, X
@@ -12012,10 +12011,10 @@ RotateObjectLocation:
     BCC @AddToY
     ; Subtract the product's fraction from the Y coordinate fraction.
     ;
-    LDA _Multi_041F, X
+    LDA $041F, X
     SEC
     SBC $02
-    STA _Multi_041F, X
+    STA $041F, X
     ; And subtract the product's whole part from the Y coordinate.
     ;
     LDA ObjY, X
@@ -12026,10 +12025,10 @@ RotateObjectLocation:
     ; Else (angle - 8) < $10. So, the monster is in the left half of circle going down.
     ; Add the product's fraction to the Y coordinate fraction.
     ;
-    LDA _Multi_041F, X
+    LDA $041F, X
     CLC
     ADC $02
-    STA _Multi_041F, X
+    STA $041F, X
     ; And add the product's whole part to the Y coordinate with carry.
     ;
     LDA ObjY, X

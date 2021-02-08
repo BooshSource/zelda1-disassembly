@@ -1862,7 +1862,7 @@ InitLeever:
     ; to burst out of the ground.
     ;
     LDA #$05
-    STA _RedLeeverLongTimer
+    STA RedLeeverLongTimer
     JSR ResetObjMetastateAndTimer
 InitSlowOctorockOrGhini:
     ; Assign QSpeed $20 (0.5 pixels a frame).
@@ -2722,7 +2722,7 @@ Burrower_AnimateDrawAndCheckCollisions:
     LDA ObjType, X
     CMP #$10
     BNE @Exit
-    DEC _ActiveRedLeeverCount
+    DEC ActiveRedLeeverCount
 @Exit:
     RTS
 
@@ -2746,11 +2746,11 @@ UpdateRedLeever:
     ; In state we determine whether to burst out of the ground.
     ; If the long timer has not expired, then return.
     ;
-    LDA _RedLeeverLongTimer
+    LDA RedLeeverLongTimer
     BNE @Exit
     ; Only allow two red leevers at a time.
     ;
-    LDA _ActiveRedLeeverCount
+    LDA ActiveRedLeeverCount
     CMP #$02
     BCS @Exit
     ; Face in the same direction as Link.
@@ -2866,7 +2866,7 @@ UpdateRedLeever:
     JSR GetCollidableTileStill
     CMP ObjectFirstUnwalkableTile
     BCS @Exit
-    INC _ActiveRedLeeverCount
+    INC ActiveRedLeeverCount
     ; Set animation counter to 1, so that it will roll over this frame
     ; and pick up whatever the new value is for state 1.
     ;
@@ -2875,7 +2875,7 @@ UpdateRedLeever:
     ; Set the long timer to 2, meaning 20 frames.
     ;
     ASL
-    STA _RedLeeverLongTimer
+    STA RedLeeverLongTimer
     JSR RedLeever_CycleStateDrawAndCheckCollisions
     ; The leever has to face Link in order to move toward him.
     ;
@@ -2944,7 +2944,7 @@ RedLeever_CycleStateDrawAndCheckCollisions:
     ADC #$01
     CMP #$06
     BCC :+
-    DEC _ActiveRedLeeverCount
+    DEC ActiveRedLeeverCount
     LDA #$00
 :
     STA ObjState, X

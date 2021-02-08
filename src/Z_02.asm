@@ -518,8 +518,8 @@ InitDemoSubphaseTransferTitlePalette:
     BPL @CopyTitlePalette
     LDX #$0A                    ; Reset variables used in this phase.
     LDA #$00
-    STA _DemoLineTextIndex
-    STA _DemoItemRow
+    STA DemoLineTextIndex
+    STA DemoItemRow
 @ClearVars:
     STA TriforceGlowTimer, X
     STA InitializedWaterfallAnimation, X
@@ -606,7 +606,7 @@ AnimateDemoPhase1Subphase0:
     LDA CurVScroll              ; Have we scrolled to the bottom of nametable 2?
     CMP #$F0
     BNE @CheckVScroll
-    INC _ScrolledScreenCount
+    INC ScrolledScreenCount
     ; The bottom of NT 2 is also the top of NT 0.
     ; So, reset CurVScroll and the base NT.
     LDA #$00
@@ -618,10 +618,10 @@ AnimateDemoPhase1Subphase0:
     LDA CurVScroll
     CMP #$08
     BNE @Exit
-    LDA _ScrolledScreenCount
+    LDA ScrolledScreenCount
     BEQ @Exit
     LDA #$00
-    STA _ScrolledScreenCount
+    STA ScrolledScreenCount
     INC DemoSubphase
 @Exit:
     RTS
@@ -657,9 +657,9 @@ AnimateDemoPhase1Subphase2:
     INC ScrolledLineCount       ; We scrolled one more line.
     LDA ScrolledLineCount
     BNE :+                      ; Once we've scrolled a whole screen,
-    INC _ScrolledScreenCount    ; Increment the screen count.
+    INC ScrolledScreenCount     ; Increment the screen count.
 :
-    LDA _ScrolledScreenCount    ; Have we scrolled 5 screens?
+    LDA ScrolledScreenCount     ; Have we scrolled 5 screens?
     CMP #$05
     BNE @Scroll                 ; Scroll the nametable.
     LDA ScrolledLineCount       ; Scroll half a screen more.
@@ -735,7 +735,7 @@ AnimateDemoPhase1Subphase2:
     LDA DemoLineAttrs, X
     AND #$80
     BEQ @ProcessAttrs           ; If attribute $80 isn't set, then leave the line blank.
-    LDA _DemoLineTextIndex
+    LDA DemoLineTextIndex
     ASL
     TAX
     LDY #$00
@@ -759,7 +759,7 @@ AnimateDemoPhase1Subphase2:
     JMP @CopyLine
 
 @EndLine:
-    INC _DemoLineTextIndex
+    INC DemoLineTextIndex
 @ProcessAttrs:
     ; Finished processing attribute $80.
     ;
@@ -845,7 +845,7 @@ ProcessDemoLineItems:
     JMP @FindDisabled
 
 @SetUpObject:
-    LDY _DemoItemRow
+    LDY DemoItemRow
     LDA DemoLeftItemIds, Y      ; Allocate an object for the item on the left.
     STA DemoItemIds, X
     LDA #$EF                    ; Start at the bottom of the screen.
@@ -878,7 +878,7 @@ ProcessDemoLineItems:
     LDA #$00
     STA $0430                   ; TODO: $430?
 @IncRow:
-    INC _DemoItemRow
+    INC DemoItemRow
     RTS
 
 @CenterLink:
@@ -1044,19 +1044,19 @@ AnimateDemoPhase0Subphase0Artifacts:
     BPL @CopyTriforcePalette
     ; Patch the palette record with the color
     ; for the current point in the cycle.
-    LDY _TriforceGlowCycle
+    LDY TriforceGlowCycle
     LDA TriforceGlowingColors, Y
     STA DynTileBuf+5
     LDA #$06                    ; Restart the glow timer.
     STA TriforceGlowTimer
-    INC _TriforceGlowCycle      ; Advance the glow cycle.
-    LDA _TriforceGlowCycle
+    INC TriforceGlowCycle       ; Advance the glow cycle.
+    LDA TriforceGlowCycle
     CMP #$08                    ; When the glow cycle finishes,
     BNE @DecGlowTimer
     LDA #$10                    ; delay twice as long for one step of the cycle.
     STA TriforceGlowTimer
     LDA #$00                    ; Restart the glow cycle.
-    STA _TriforceGlowCycle
+    STA TriforceGlowCycle
 @DecGlowTimer:
     DEC TriforceGlowTimer
     RTS

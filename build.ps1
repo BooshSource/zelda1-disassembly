@@ -42,8 +42,8 @@ function CheckRequirements()
 
 CheckRequirements
 
-mkdir obj -ErrorAction ignore
-mkdir bin -ErrorAction ignore
+mkdir obj -ErrorAction ignore > $null
+mkdir bin -ErrorAction ignore > $null
 
 $srcPaths = @()
 $objPaths = @()

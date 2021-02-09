@@ -1,17 +1,26 @@
 function JoinFiles( [string] $outputPath, [string[]] $inputPaths )
 {
-	$outputPath = resolve-path $outputPath
+	$outFileName = [IO.Path]::GetFileName( $outputPath )
+	$outDir = [IO.Path]::GetDirectoryName( $outputPath )
+	$outDir = resolve-path $outDir
+
+	$outputPath = join-path $outDir $outFileName
 	$output = [IO.File]::Open( $outputPath, [IO.FileMode]::Create )
 
-	foreach ( $inputPath in $inputPaths )
+	try
 	{
-		$inputPath = resolve-path $inputPath
-		$input = [IO.File]::OpenRead( $inputPath )
-		$input.CopyTo( $output )
-		$input.Close()
+		foreach ( $inputPath in $inputPaths )
+		{
+			$inputPath = resolve-path $inputPath
+			$input = [IO.File]::OpenRead( $inputPath )
+			$input.CopyTo( $output )
+			$input.Close()
+		}
 	}
-
-	$output.Close()
+	finally
+	{
+		$output.Close()
+	}
 }
 
 
@@ -33,29 +42,34 @@ function CompareFiles(
 		return $false
 	}
 
-	$leftStream  = $leftFile.OpenRead()
-	$rightStream = $rightFile.OpenRead()
-
 	$leftBuf  = new-object byte[] $bufferSize
 	$rightBuf = new-object byte[] $bufferSize
 
-	do
+	try
 	{
-		$bytesRead = $leftStream.Read( $leftBuf, 0, $bufferSize )
-		[void] $rightStream.Read( $rightBuf, 0, $bufferSize )
+		$leftStream  = $leftFile.OpenRead()
+		$rightStream = $rightFile.OpenRead()
 
-		for ( $i = 0; $i -lt $bytesRead; $i++ )
+		do
 		{
-			if ( $leftBuf[$i] -ne $rightBuf[$i] )
+			$bytesRead = $leftStream.Read( $leftBuf, 0, $bufferSize )
+			[void] $rightStream.Read( $rightBuf, 0, $bufferSize )
+
+			for ( $i = 0; $i -lt $bytesRead; $i++ )
 			{
-				return false
+				if ( $leftBuf[$i] -ne $rightBuf[$i] )
+				{
+					return $false
+				}
 			}
 		}
+		while ( $bytesRead -eq $bufferSize )
 	}
-	while ( $bytesRead -eq $bufferSize )
-
-	$leftStream.Close()
-	$rightStream.Close()
+	finally
+	{
+		$leftStream.Close()
+		$rightStream.Close()
+	}
 
 	return $true
 }

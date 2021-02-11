@@ -1,4 +1,4 @@
-param ( [switch] $NoVerify )
+param ( [switch] $NoVerify, [switch] $NoExtract )
 
 # Escalate any statement-terminating error to a script-terminating one.
 trap { break }
@@ -39,11 +39,39 @@ function CheckRequirements()
 	}
 }
 
+function ExtractBins()
+{
+	$romPath = resolve-path .\ext\Original.nes
+	$binXmlPath = resolve-path .\src\bins.xml
+	$binRootPath = resolve-path .\src
+
+	$xml = new-object Xml
+	$xml.Load( $binXmlPath )
+
+	$image = [IO.File]::ReadAllBytes( $romPath )
+
+	foreach ( $bin in $xml.Binaries.Binary )
+	{
+		$binPath = join-path $binRootPath $bin.FileName
+		$offset = [int] $bin.Offset + 16
+
+		$buf = new-object byte[] $bin.Length
+		[Array]::Copy( $image, $offset, $buf, 0, $bin.Length )
+
+		[IO.File]::WriteAllBytes( $binPath, $buf )
+	}
+}
+
 
 CheckRequirements
 
 mkdir obj -ErrorAction ignore > $null
 mkdir bin -ErrorAction ignore > $null
+
+if ( !$NoExtract )
+{
+	ExtractBins
+}
 
 $srcPaths = @()
 $objPaths = @()

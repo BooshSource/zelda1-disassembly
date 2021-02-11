@@ -1447,42 +1447,10 @@ EnteringRoomRelativePositions:
     .BYTE $18, $E8, $28, $D8
 
 ObjLists:
-    .BYTE $03, $03, $04, $03, $04, $03, $04, $03
-    .BYTE $04, $1A, $1A, $02, $01, $02, $01, $01
-    .BYTE $02, $01, $02, $01, $0F, $02, $01, $10
-    .BYTE $02, $0F, $1A, $10, $1A, $0F, $1A, $09
-    .BYTE $08, $08, $08, $08, $08, $07, $08, $07
-    .BYTE $08, $09, $08, $09, $08, $0A, $07, $0A
-    .BYTE $07, $07, $03, $0A, $04, $0A, $04, $04
-    .BYTE $4A, $00, $00, $00, $13, $13, $00, $13
-    .BYTE $4A, $00, $00, $00, $1B, $1B, $1B, $1B
-    .BYTE $2B, $2B, $2B, $13, $13, $1B, $1B, $1B
-    .BYTE $16, $30, $30, $1B, $1B, $16, $00, $00
-    .BYTE $2B, $2B, $2B, $23, $23, $24, $23, $24
-    .BYTE $2B, $2B, $12, $12, $12, $00, $00, $00
-    .BYTE $2B, $2B, $13, $13, $17, $17, $2B, $2B
-    .BYTE $0C, $0B, $0B, $30, $30, $30, $2B, $2B
-    .BYTE $05, $05, $05, $1B, $1B, $1B, $4A, $00
-    .BYTE $00, $00, $17, $17, $17, $17, $4A, $00
-    .BYTE $00, $00, $23, $24, $23, $24, $16, $0C
-    .BYTE $0B, $0C, $0B, $16, $2B, $2B, $2B, $27
-    .BYTE $27, $27, $27, $27, $05, $06, $06, $05
-    .BYTE $06, $05, $00, $00, $23, $23, $24, $23
-    .BYTE $24, $2B, $17, $23, $23, $17, $24, $17
-    .BYTE $24, $2D, $2D, $2D, $2C, $23, $24, $23
-    .BYTE $24, $2D, $2D, $2D, $2C, $0C, $0B, $0C
-    .BYTE $0B, $2D, $2D, $2D, $2C, $27, $27, $27
-    .BYTE $27
+.INCBIN "dat/ObjLists.dat"
 
 ObjListAddrs:
-    .BYTE $76, $86, $7B, $86, $7F, $86, $85, $86
-    .BYTE $89, $86, $8F, $86, $95, $86, $9A, $86
-    .BYTE $9E, $86, $A3, $86, $A8, $86, $AE, $86
-    .BYTE $B6, $86, $BE, $86, $C6, $86, $CE, $86
-    .BYTE $D6, $86, $DE, $86, $E4, $86, $EC, $86
-    .BYTE $F4, $86, $FC, $86, $04, $87, $0A, $87
-    .BYTE $12, $87, $1A, $87, $1F, $87, $27, $87
-    .BYTE $2F, $87, $37, $87
+.INCLUDE "dat/ObjListAddrs.inc"
 
 InitMode4:
     LDX GameSubmode
@@ -1563,15 +1531,15 @@ InitMode4_GoToSub0:
     STA CandleState
     RTS
 
+; TODO: Is also called for modes 9, $B, $C.
+;
+; Description:
+; Clears intraroom data.
+; Set up Link to walk into a room.
+; Decodes and lays out objects.
+; Switches from initializing the game mode to updating it.
+;
 InitMode_EnterRoom:
-    ; TODO: Is also called for modes 9, $B, $C.
-    ;
-    ; Description:
-    ; Clears intraroom data.
-    ; Set up Link to walk into a room.
-    ; Decodes and lays out objects.
-    ; Switches from initializing the game mode to updating it.
-    ;
     JSR DrawSpritesBetweenRooms
     JSR ResetPlayerState
     ; Reset [0300] to [051F].
@@ -4611,9 +4579,9 @@ DecBottomOffset:
 FillWalls:
     ; Load the address of WallTileList.
     ;
-    LDA #$A0
+    LDA #<WallTileList
     STA $00
-    LDA #$9F
+    LDA #>WallTileList
     STA $01
     ; Load the address of second tile in second row of PlayAreaTiles.
     ; This is where we'll start loading tiles for the room.
@@ -4665,7 +4633,7 @@ MoveWallPtrs:
     JSR AddToInt16At4
 NextLoopWallTile:
     JSR Add1ToInt16At0          ; Increment the wall tile list address.
-    CMP #$EE
+    CMP #<(WallTileList + $4E)
     BNE LoopWallTile            ; If wall tile list pointer hasn't reached the end ($94EE), go process tiles again. At this point, we'll have written the walls on the left half of the play area.
     ; Copy rotated 180 degrees, accounting for appropriate
     ; horizontal or vertical flipping of tiles.
@@ -5341,9 +5309,9 @@ PrimarySquaresUW:
 LayoutUWFloor:
     JSR GetUniqueRoomId
     PHA                         ; Save unique room ID.
-    LDA #$DE                    ; Load the address of room column directory in [$02:03].
+    LDA #<RoomLayoutsUW         ; Load the address of room column directory in [$02:03].
     STA $02
-    LDA #$A0
+    LDA #>RoomLayoutsUW
     STA $03
     PLA                         ; Restore unique room ID.
     ASL                         ; Add ((unique room ID) * $C) to address in [$02:03]. Each unique room has $C columns.
@@ -6040,8 +6008,8 @@ PatchColumnDirectoryForCellar:
     BEQ :+
     ; In UW, set the first address of column directory to start of UW cellar column heap.
     ;
-    LDA #$D4
-    LDX #$A3
+    LDA #<ColumnHeapUWCellar
+    LDX #>ColumnHeapUWCellar
 :
     STA ColumnDirectoryOW
     STX ColumnDirectoryOW+1
@@ -6426,16 +6394,17 @@ InitMode3_Sub8:
     STA ObjY
     JMP BeginUpdateMode
 
+; Description:
+; Two sets of 5 elements:
+; * left bound for objects
+; * right bound for objects
+; * up bound for objects
+; * down bound for objects
+; * first unwalkable tile
+;
+; The first set is for OW. The second is for UW.
+;
 ObjectRoomBoundsOW:
-    ; Two sets of 5 elements:
-    ; * left bound for objects
-    ; * right bound for objects
-    ; * up bound for objects
-    ; * down bound for objects
-    ; * first unwalkable tile
-    ;
-    ; The first set is for OW. The second is for UW.
-    ;
     .BYTE $11, $E0, $4E, $CD, $89
 
 ObjectRoomBoundsUW:
@@ -6726,7 +6695,7 @@ InitMode9_EnterCellar:
     STA ObjY
     LDA #$04
     STA ObjDir
-    ; Set a grid offset appropriate for the distance to be traveled:
+    ; Set a grid offset appropriate for the distance to travel:
     ;   ($5D - $41) = $1C = ($100 - $E4)
     ;
     LDA #$E4

@@ -7030,14 +7030,14 @@ DrawVire:
     ADC ObjAnimFrame, X
     JMP DrawObjectMirrored
 
+; Description:
+; Blue Wizzrobe has two states: walking and teleporting.
+; When walking, the object timer is set. When teleporting,
+; the teleporting distance remaining is set.
+;
+; If we have the magic clock, then only go draw and check collisions.
+;
 UpdateBlueWizzrobe:
-    ; Description:
-    ; Blue Wizzrobe has two states: walking and teleporting.
-    ; When walking, the object timer is set. When teleporting,
-    ; the teleporting distance remaining is set.
-    ;
-    ; If we have the magic clock, then only go draw and check collisions.
-    ;
     LDA InvClock
     BNE L_Wizzrobe_DrawAndCheckCollisions
     JSR BlueWizzrobe_WalkOrTeleport
@@ -7156,19 +7156,19 @@ BlueWizzrobe_MoveAndCheckTile:
 @Exit:
     RTS
 
+; Description:
+; Increment the turn counter. Then turn toward Link
+; when the turn counter is a multiple of $40.
+;
+; Increment the turn counter.
+;
 BlueWizzrobe_AdvanceCounterAndTurnTowardLinkIfNeeded:
-    ; Description:
-    ; Increment the turn counter. Then turn toward Link
-    ; when the turn counter is a multiple of $40.
-    ;
-    ; Increment the turn counter.
-    ;
     INC BlueWizzrobe_ObjTurnCounter, X
+; Description:
+; When the counter is a multiple of $40, switch between facing
+; toward Link horizontally or vertically. All other times, return.
+;
 L_BlueWizzrobe_TurnTowardLinkIfNeeded:
-    ; Description:
-    ; When the counter is a multiple of $40, switch between facing
-    ; toward Link horizontally or vertically. All other times, return.
-    ;
     LDA BlueWizzrobe_ObjTurnCounter, X
     AND #$3F
     BNE L11EAF_Exit
@@ -10341,12 +10341,12 @@ UpdateGanon_JumpTable:
     .ADDR Ganon_ScenePhase1
     .ADDR Ganon_ScenePhase2
 
+; Description:
+; Lift up the Triforce of Courage while the room is dark.
+;
+; Lift the Triforce of Courage -- represented with a triforce piece.
+;
 Ganon_ScenePhase0:
-    ; Description:
-    ; Lift up the Triforce of Courage while the room is dark.
-    ;
-    ; Lift the Triforce of Courage -- represented with a triforce piece.
-    ;
     LDA #$1B
     STA ItemTypeToLift
     ; If Link's timer has not expired, then go do nothing until the last frame.
@@ -10403,12 +10403,12 @@ Ganon_ScenePhase0:
 :
     RTS
 
+; Description:
+; Lift up the Triforce of Courage while the room is light.
+;
+; Lift the Triforce of Courage -- represented with a triforce piece.
+;
 Ganon_ScenePhase1:
-    ; Description:
-    ; Lift up the Triforce of Courage while the room is light.
-    ;
-    ; Lift the Triforce of Courage -- represented with a triforce piece.
-    ;
     LDA #$1B
     STA ItemTypeToLift
     ; If Link's timer hasn't expired, then go draw Ganon.
@@ -10434,12 +10434,12 @@ Ganon_DrawBodyFrame0:
     STA Ganon_ObjAnimationFrame, X
     JMP Ganon_DrawBody
 
+; Description:
+; Fighting Ganon.
+;
+; If Ganon is dying, go handle it.
+;
 Ganon_ScenePhase2:
-    ; Description:
-    ; Fighting Ganon.
-    ;
-    ; If Ganon is dying, go handle it.
-    ;
     LDA Ganon_ObjPhase, X
     BNE Ganon_Dying
     JSR Ganon_CheckCollisions
@@ -10462,10 +10462,10 @@ Ganon_ScenePhase2:
     ;
     CMP #$01
     BNE L_Ganon_DrawBody
+; Description:
+; Put Ganon at Y=$A0, and a random X of $30 or $B0.
+;
 Ganon_RandomizeLocation:
-    ; Description:
-    ; Put Ganon at Y=$A0, and a random X of $30 or $B0.
-    ;
     LDA #$A0
     STA ObjY, X
     LDA FrameCounter
@@ -11718,14 +11718,14 @@ DeferBounce:
 L13307_Exit:
     RTS
 
+; Description:
+; Turn towards the player a number of times.
+; Then go to state 1. After each turn delay $10 frames.
+;
+;
+; Delay until timer = 0.
+;
 Flyer_Chase:
-    ; Description:
-    ; Turn towards the player a number of times.
-    ; Then go to state 1. After each turn delay $10 frames.
-    ;
-    ;
-    ; Delay until timer = 0.
-    ;
     LDA ObjTimer, X
     BNE L13307_Exit             ; If timer is not expired, then return.
     ; Decrease the turn counter.
@@ -11855,14 +11855,14 @@ TestDir:
     CMP #$07
     BCS NextLoopRight
     BCC SetDir8ForIndex
+; Description:
+; Delay and turn randomly a number of times.
+; The go to state 1. After each turn, delay $10 frames.
+;
+;
+; Delay until timer = 0.
+;
 Flyer_Wander:
-    ; Description:
-    ; Delay and turn randomly a number of times.
-    ; The go to state 1. After each turn, delay $10 frames.
-    ;
-    ;
-    ; Delay until timer = 0.
-    ;
     LDA ObjTimer, X
     BNE L133AC_Exit
     ; Decrease the turn counter.

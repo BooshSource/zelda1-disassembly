@@ -416,83 +416,10 @@ DemoStoryFinalSpriteAttrs:
     .BYTE $00, $00, $00, $00, $00, $40, $00, $00
 
 DemoTextFields:
-    .BYTE $00, $E4, $E5, $E4, $E5, $E4, $E5, $E6
-    .BYTE $24, $0A, $15, $15, $24, $18, $0F, $24
-    .BYTE $1D, $1B, $0E, $0A, $1C, $1E, $1B, $0E
-    .BYTE $1C, $24, $E6, $E4, $E5, $E4, $E5, $E4
-    .BYTE $E5, $FF, $07, $11, $0E, $0A, $1B, $1D
-    .BYTE $24, $24, $24, $24, $24, $0C, $18, $17
-    .BYTE $1D, $0A, $12, $17, $0E, $1B, $FF, $14
-    .BYTE $11, $0E, $0A, $1B, $1D, $FF, $07, $0F
-    .BYTE $0A, $12, $1B, $22, $24, $24, $24, $24
-    .BYTE $24, $24, $24, $24, $0C, $15, $18, $0C
-    .BYTE $14, $FF, $07, $1B, $1E, $19, $22, $24
-    .BYTE $24, $24, $24, $24, $24, $24, $05, $24
-    .BYTE $1B, $1E, $19, $12, $0E, $1C, $FF, $07
-    .BYTE $1C, $20, $18, $1B, $0D, $24, $24, $24
-    .BYTE $24, $24, $24, $24, $24, $20, $11, $12
-    .BYTE $1D, $0E, $FF, $14, $1C, $20, $18, $1B
-    .BYTE $0D, $FF, $06, $16, $0A, $10, $12, $0C
-    .BYTE $0A, $15, $24, $24, $24, $24, $24, $24
-    .BYTE $16, $0A, $10, $12, $0C, $0A, $15, $FF
-    .BYTE $07, $1C, $20, $18, $1B, $0D, $24, $24
-    .BYTE $24, $24, $24, $24, $24, $24, $1C, $11
-    .BYTE $12, $0E, $15, $0D, $FF, $05, $0B, $18
-    .BYTE $18, $16, $0E, $1B, $0A, $17, $10, $24
-    .BYTE $24, $24, $24, $24, $16, $0A, $10, $12
-    .BYTE $0C, $0A, $15, $FF, $12, $0B, $18, $18
-    .BYTE $16, $0E, $1B, $0A, $17, $10, $FF, $07
-    .BYTE $0B, $18, $16, $0B, $24, $24, $24, $24
-    .BYTE $24, $24, $24, $24, $24, $24, $0B, $18
-    .BYTE $20, $FF, $07, $0A, $1B, $1B, $18, $20
-    .BYTE $24, $24, $24, $24, $24, $24, $24, $24
-    .BYTE $1C, $12, $15, $1F, $0E, $1B, $FF, $14
-    .BYTE $0A, $1B, $1B, $18, $20, $FF, $07, $0B
-    .BYTE $15, $1E, $0E, $24, $24, $24, $24, $24
-    .BYTE $24, $24, $24, $24, $24, $1B, $0E, $0D
-    .BYTE $FF, $06, $0C, $0A, $17, $0D, $15, $0E
-    .BYTE $24, $24, $24, $24, $24, $24, $24, $24
-    .BYTE $0C, $0A, $17, $0D, $15, $0E, $FF, $07
-    .BYTE $0B, $15, $1E, $0E, $24, $24, $24, $24
-    .BYTE $24, $24, $24, $24, $24, $24, $1B, $0E
-    .BYTE $0D, $FF, $07, $1B, $12, $17, $10, $24
-    .BYTE $24, $24, $24, $24, $24, $24, $24, $24
-    .BYTE $24, $1B, $12, $17, $10, $FF, $07, $19
-    .BYTE $18, $20, $0E, $1B, $24, $24, $24, $24
-    .BYTE $24, $24, $24, $1B, $0E, $0C, $18, $1B
-    .BYTE $0D, $0E, $1B, $FF, $05, $0B, $1B, $0A
-    .BYTE $0C, $0E, $15, $0E, $1D, $FF, $07, $1B
-    .BYTE $0A, $0F, $1D, $24, $24, $24, $24, $24
-    .BYTE $24, $24, $1C, $1D, $0E, $19, $15, $0A
-    .BYTE $0D, $0D, $0E, $1B, $FF, $06, $16, $0A
-    .BYTE $10, $12, $0C, $0A, $15, $24, $24, $24
-    .BYTE $24, $24, $24, $0B, $18, $18, $14, $24
-    .BYTE $18, $0F, $FF, $08, $1B, $18, $0D, $24
-    .BYTE $24, $24, $24, $24, $24, $24, $24, $24
-    .BYTE $16, $0A, $10, $12, $0C, $FF, $08, $14
-    .BYTE $0E, $22, $24, $24, $24, $24, $24, $24
-    .BYTE $24, $24, $16, $0A, $10, $12, $0C, $0A
-    .BYTE $15, $FF, $15, $14, $0E, $22, $FF, $08
-    .BYTE $16, $0A, $19, $24, $24, $24, $24, $24
-    .BYTE $24, $24, $24, $0C, $18, $16, $19, $0A
-    .BYTE $1C, $1C, $FF, $0C, $1D, $1B, $12, $0F
-    .BYTE $18, $1B, $0C, $0E, $FF, $04, $15, $12
-    .BYTE $0F, $0E, $24, $19, $18, $1D, $12, $18
-    .BYTE $17, $24, $24, $24, $02, $17, $0D, $24
-    .BYTE $19, $18, $1D, $12, $18, $17, $FF, $06
-    .BYTE $15, $0E, $1D, $1D, $0E, $1B, $24, $24
-    .BYTE $24, $24, $24, $24, $24, $24, $0F, $18
-    .BYTE $18, $0D, $FF
+.INCBIN "dat/DemoTextFields.dat"
 
 DemoLineTextAddrs:
-    .BYTE $9A, $92, $BC, $92, $D1, $92, $D8, $92
-    .BYTE $EC, $92, $7F, $94, $99, $94, $01, $93
-    .BYTE $15, $93, $1C, $93, $32, $93, $47, $93
-    .BYTE $5E, $93, $69, $93, $7C, $93, $91, $93
-    .BYTE $98, $93, $AB, $93, $C1, $93, $D4, $93
-    .BYTE $E8, $93, $FE, $93, $08, $94, $1F, $94
-    .BYTE $35, $94, $48, $94, $5C, $94, $61, $94
-    .BYTE $75, $94
+.INCLUDE "dat/DemoLineTextAddrs.inc"
 
 InitDemoSubphaseClearArtifacts:
     JSR TurnOffVideoAndClearArtifacts
@@ -1088,11 +1015,11 @@ UpdateWaterfallAnimation:
     ; TODO: Are these used?
     ;
     LDA #$C0
-    STA $0423
+    STA TitleWaveYs+3
     LDA #$D0
-    STA $0424
+    STA TitleWaveYs+4
     LDA #$DD
-    STA $0425
+    STA TitleWaveYs+5
     INC InitializedWaterfallAnimation
 @UpdateSprites:
     LDX #$02
@@ -1269,10 +1196,10 @@ AnimateDemoPhase0Subphase1:
     ROL $01
     ASL
     ROL $01
-    ADC #$69
+    ADC #<DemoPhase0Subphase1Palettes
     STA $00
     LDA $01
-    ADC #$99
+    ADC #>DemoPhase0Subphase1Palettes
     STA $01
     LDA #$3F                    ; Set up the header of the transfer record.
     STA DynTileBuf
@@ -3223,9 +3150,9 @@ UpdateZeldaTextbox:
     ; Increment the low VRAM address for the next character.
     ;
     INC TextboxCharPtr
-    LDA #$59
+    LDA #<ThanksText
     STA $00
-    LDA #$A9
+    LDA #>ThanksText
     STA $01
     ; Load the person text current character index.
     ;
@@ -3653,72 +3580,16 @@ CreditsPagesTextMasks:
     .BYTE $03, $25, $05, $40
 
 CreditsTextAddrsLo:
-    .BYTE $5C, $65, $70, $88, $A0, $B8, $C8, $E0
-    .BYTE $F8, $06, $14, $1B, $33, $4D, $59, $72
-    .BYTE $82, $92, $A1, $B6, $C9, $D1, $EA
+.INCLUDE "dat/CreditsTextAddrsLo.inc"
 
 CreditsTextAddrsHi:
-    .BYTE $AC, $AC, $AC, $AC, $AC, $AC, $AC, $AC
-    .BYTE $AC, $AD, $AD, $AD, $AD, $AD, $AD, $AD
-    .BYTE $AD, $AD, $AD, $AD, $AD, $AD, $AD
+.INCLUDE "dat/CreditsTextAddrsHi.inc"
 
 CreditsTextLines:
-    .BYTE $07, $0D, $24, $1C, $1D, $0A, $0F, $0F
-    .BYTE $24, $09, $05, $0E, $21, $0E, $0C, $1E
-    .BYTE $1D, $12, $1F, $0E, $16, $05, $19, $1B
-    .BYTE $18, $0D, $1E, $0C, $0E, $1B, $63, $63
-    .BYTE $63, $24, $11, $63, $22, $0A, $16, $0A
-    .BYTE $1E, $0C, $11, $12, $16, $05, $19, $1B
-    .BYTE $18, $0D, $1E, $0C, $0E, $1B, $63, $63
-    .BYTE $63, $63, $24, $1C, $63, $16, $12, $22
-    .BYTE $0A, $11, $18, $17, $16, $05, $0D, $12
-    .BYTE $1B, $0E, $0C, $1D, $18, $1B, $63, $63
-    .BYTE $63, $63, $24, $1C, $63, $16, $12, $22
-    .BYTE $0A, $11, $18, $17, $0E, $0D, $63, $63
-    .BYTE $63, $63, $63, $63, $24, $1D, $0E, $17
-    .BYTE $24, $1D, $0E, $17, $16, $05, $0D, $0E
-    .BYTE $1C, $12, $10, $17, $0E, $1B, $63, $63
-    .BYTE $63, $63, $63, $63, $24, $1D, $0E, $17
-    .BYTE $24, $1D, $0E, $17, $16, $05, $19, $1B
-    .BYTE $18, $10, $1B, $0A, $16, $16, $0E, $1B
-    .BYTE $63, $63, $24, $1D, $63, $17, $0A, $14
-    .BYTE $0A, $23, $18, $18, $0C, $0F, $63, $63
-    .BYTE $63, $63, $63, $24, $22, $0A, $0C, $11
-    .BYTE $0A, $17, $0C, $0F, $63, $63, $63, $24
-    .BYTE $16, $0A, $1B, $1E, $16, $0A, $1B, $1E
-    .BYTE $05, $05, $1C, $18, $1E, $17, $0D, $16
-    .BYTE $05, $0C, $18, $16, $19, $18, $1C, $0E
-    .BYTE $1B, $63, $63, $63, $63, $63, $63, $24
-    .BYTE $14, $18, $17, $0C, $11, $0A, $17, $18
-    .BYTE $04, $0A, $17, $18, $1D, $11, $0E, $1B
-    .BYTE $24, $1A, $1E, $0E, $1C, $1D, $24, $20
-    .BYTE $12, $15, $15, $24, $1C, $1D, $0A, $1B
-    .BYTE $1D, $0A, $0B, $0F, $1B, $18, $16, $24
-    .BYTE $11, $0E, $1B, $0E, $2C, $17, $05, $19
-    .BYTE $1B, $0E, $1C, $1C, $24, $1D, $11, $0E
-    .BYTE $24, $1C, $1D, $0A, $1B, $1D, $24, $0B
-    .BYTE $1E, $1D, $1D, $18, $17, $2C, $0E, $09
-    .BYTE $FC, $01, $09, $08, $06, $24, $17, $12
-    .BYTE $17, $1D, $0E, $17, $0D, $18, $0E, $09
-    .BYTE $22, $18, $1E, $24, $0A, $1B, $0E, $24
-    .BYTE $10, $1B, $0E, $0A, $1D, $63, $0D, $09
-    .BYTE $24, $24, $24, $24, $24, $24, $24, $24
-    .BYTE $24, $62, $24, $24, $24, $13, $06, $22
-    .BYTE $18, $1E, $24, $11, $0A, $1F, $0E, $24
-    .BYTE $0A, $17, $24, $0A, $16, $0A, $23, $12
-    .BYTE $17, $10, $11, $08, $20, $12, $1C, $0D
-    .BYTE $18, $16, $24, $0A, $17, $0D, $24, $19
-    .BYTE $18, $20, $0E, $1B, $63, $06, $0D, $0E
-    .BYTE $17, $0D, $24, $18, $0F, $17, $04, $2D
-    .BYTE $1D, $11, $0E, $24, $15, $0E, $10, $0E
-    .BYTE $17, $0D, $24, $18, $0F, $24, $23, $0E
-    .BYTE $15, $0D, $0A, $24, $01, $2D, $0E, $09
-    .BYTE $FC, $01, $09, $08, $06, $24, $17, $12
-    .BYTE $17, $1D, $0E, $17, $0D, $18
+.INCBIN "dat/CreditsTextLines.dat"
 
 CreditsAttrs:
     .BYTE $00, $AA, $FF, $FF, $55, $AA, $AA, $FF
-
     .BYTE $FF, $FF, $55, $00, $00, $00, $00, $00
     .BYTE $00, $00, $50, $00, $00, $00, $AA, $00
 

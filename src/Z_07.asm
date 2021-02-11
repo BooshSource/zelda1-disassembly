@@ -3085,13 +3085,13 @@ Walker_AltDir_EndLoop:
     STA $0E
     RTS
 
+; Description:
+; Search for an unblocked direction. Set facing direction to it,
+; if one is found.
+;
+; If not at a square boundary, then return.
+;
 _FaceUnblockedDir:
-    ; Description:
-    ; Search for an unblocked direction. Set facing direction to it,
-    ; if one is found.
-    ;
-    ; If not at a square boundary, then return.
-    ;
     LDA ObjGridOffset, X
     BNE L1F1FC_Exit
     ; Else reset [0E] to start the search for an unblocked direction.
@@ -3154,10 +3154,10 @@ Link_EndMoveAndDraw_Bank4:
     LDA #$04
     JMP SwitchBank
 
+; Description:
+; Draw Link without animating by keeping the animation counter fixed.
+;
 Link_EndMoveAndDraw:
-    ; Description:
-    ; Draw Link without animating by keeping the animation counter fixed.
-    ;
     LDA #$06
     STA ObjAnimCounter
     BNE Link_EndMoveAndAnimate

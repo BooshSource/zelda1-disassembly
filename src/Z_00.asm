@@ -12,6 +12,21 @@ SongTable:
     .BYTE $ED, $24, $2C, $34, $3C, $44, $34, $4C
     .BYTE $54, $5C, $44, $F5
 
+; Description:
+; Each song phrase is described by a header in this format:
+;
+; 0: Note length table base
+; 1: Song script address low
+; 2: Song script address high
+; 3: Triangle note offset in script
+; 4: Square 0 note offset in script
+; 5: Noise note offset in script
+; 6: Envelope selector
+; 7: TODO:
+;
+; Note that the last byte of the "Item taken" header overlaps
+; "End level", and "End level" overlaps "Overworld".
+;
 SongHeaderDemo0:
     .BYTE $20, $8B, $94, $3B, $1D, $4F, $80, $01
     .BYTE $20, $DC, $94, $27, $57, $23, $01, $80

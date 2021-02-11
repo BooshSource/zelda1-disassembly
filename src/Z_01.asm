@@ -45,16 +45,7 @@
 .EXPORT UpdateWhirlwind_Full
 
 PersonTextAddrs:
-    .BYTE $4C, $80, $77, $80, $A1, $80, $B9, $80
-    .BYTE $E3, $80, $05, $81, $2D, $81, $52, $81
-    .BYTE $79, $81, $97, $81, $AE, $81, $D2, $81
-    .BYTE $F8, $81, $2C, $82, $41, $82, $58, $82
-    .BYTE $7D, $82, $94, $82, $B8, $82, $CD, $82
-    .BYTE $F5, $82, $0D, $83, $4D, $83, $70, $83
-    .BYTE $9C, $83, $C6, $83, $F0, $83, $1C, $84
-    .BYTE $3F, $84, $6D, $84, $90, $84, $B8, $84
-    .BYTE $E3, $84, $0E, $85, $26, $85, $53, $85
-    .BYTE $68, $85, $7E, $85
+.INCLUDE "dat/PersonTextAddrs.inc"
 
 PersonText:
 .INCBIN "dat/PersonText.dat"
@@ -3050,9 +3041,10 @@ FetchFileAAddressSet:
     BPL :-
     ; Put the address of the profile's whole
     ; WorldFlags block in [$0E:0F].
-    LDA #$7F
+    ;
+    LDA #<WorldFlags
     STA $0E
-    LDA #$06
+    LDA #>WorldFlags
     STA $0F
     RTS
 
